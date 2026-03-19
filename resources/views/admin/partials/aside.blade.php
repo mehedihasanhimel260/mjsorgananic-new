@@ -22,7 +22,7 @@
         <ul class="menu-list">
             <li>
                 <a class="dropdown">
-                    <span class="icon"><i class="mdi mdi-view-list"></i></span>
+                    <span class="icon"><i class="mdi mdi-package-variant-closed"></i></span>
                     <span class="menu-item-label">Product</span>
                     <span class="icon"><i class="mdi mdi-plus"></i></span>
                 </a>
@@ -42,31 +42,41 @@
                             <span>Products Stock</span>
                         </a>
                     </li>
+
                 </ul>
             </li>
 
             <li class="--set-active-tables-html">
-                <a href="tables.html">
-                    <span class="icon"><i class="mdi mdi-table"></i></span>
-                    <span class="menu-item-label">Tables</span>
+                <a href="{{ route('admin.orders.index') }}">
+                    <span class="icon"><i class="mdi mdi-cart-outline"></i></span>
+                    <span class="menu-item-label">Orders</span>
                 </a>
             </li>
-            <li class="--set-active-forms-html">
-                <a href="forms.html">
-                    <span class="icon"><i class="mdi mdi-square-edit-outline"></i></span>
-                    <span class="menu-item-label">Forms</span>
-                </a>
-            </li>
-            <li class="--set-active-profile-html">
-                <a href="profile.html">
-                    <span class="icon"><i class="mdi mdi-account-circle"></i></span>
-                    <span class="menu-item-label">Profile</span>
-                </a>
-            </li>
+        </ul>
+        <p class="menu-label">Courier</p>
+        <ul class="menu-list">
             <li>
-                <a href="login.html">
-                    <span class="icon"><i class="mdi mdi-lock"></i></span>
-                    <span class="menu-item-label">Login</span>
+                <a href="{{ route('admin.steadfast.index') }}" class="has-icon">
+                    <span class="icon"><i class="mdi mdi-truck-fast-outline"></i></span>
+                    <span class="menu-item-label">Steadfast </span>
+                </a>
+            </li>
+        </ul>
+        <p class="menu-label">Delivery Area</p>
+        <ul class="menu-list">
+            <li>
+                <a href="{{ route('admin.delivery-charge.index') }}" class="has-icon">
+                    <span class="icon"><i class="mdi mdi-map-marker-radius-outline"></i></span>
+                    <span class="menu-item-label">Area</span>
+                </a>
+            </li>
+        </ul>
+        <p class="menu-label">Users Managment</p>
+        <ul class="menu-list">
+            <li>
+                <a href="{{ route('admin.users.index') }}" class="has-icon">
+                    <span class="icon"><i class="mdi mdi-account-group-outline"></i></span>
+                    <span class="menu-item-label">Users list</span>
                 </a>
             </li>
         </ul>
@@ -74,14 +84,8 @@
         <ul class="menu-list">
             <li>
                 <a href="https://justboil.me/tailwind-admin-templates/free-dashboard/" class="has-icon">
-                    <span class="icon"><i class="mdi mdi-help-circle"></i></span>
+                    <span class="icon"><i class="mdi mdi-information-outline"></i></span>
                     <span class="menu-item-label">About</span>
-                </a>
-            </li>
-            <li>
-                <a href="https://github.com/justboil/admin-one-tailwind" class="has-icon">
-                    <span class="icon"><i class="mdi mdi-github-circle"></i></span>
-                    <span class="menu-item-label">GitHub</span>
                 </a>
             </li>
         </ul>

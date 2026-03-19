@@ -22,6 +22,10 @@ class User extends Authenticatable
         'email',
         'phone',
         'password',
+        'location_permission',
+        'last_visit_at',
+        'last_logged_at',
+        'last_user_agent',
 
         // IP location
         'ip_address',
@@ -62,6 +66,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'gps_lat' => 'decimal:7',
             'gps_lng' => 'decimal:7',
+            'last_visit_at' => 'datetime',
+            'last_logged_at' => 'datetime',
         ];
     }
 }

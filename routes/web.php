@@ -10,8 +10,12 @@ use App\Http\Controllers\ProfileController;
 //admin Route link start
 use App\Http\Controllers\Admin\Auth\LoginController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\DeliveryChargeController;
+use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductStockBatchController;
+use App\Http\Controllers\Admin\SteadfastController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Front_site\FrontSiteController;
 use App\Http\Controllers\Front_site\OrderController;
 //admin Route link End
@@ -66,6 +70,17 @@ Route::prefix('admin')
             Route::resource('categories', CategoryController::class);
             // Product  start
             Route::resource('products', ProductController::class);
+            Route::get('orders', [AdminOrderController::class, 'index'])->name('orders.index');
+            Route::get('orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
+            Route::post('orders/{order}/discount', [AdminOrderController::class, 'updateDiscount'])->name('orders.discount.update');
+            Route::get('steadfast', [SteadfastController::class, 'index'])->name('steadfast.index');
+            Route::post('steadfast', [SteadfastController::class, 'update'])->name('steadfast.update');
+            Route::post('steadfast/refresh-balance', [SteadfastController::class, 'refreshBalance'])->name('steadfast.refresh-balance');
+            Route::get('delivery-charge', [DeliveryChargeController::class, 'index'])->name('delivery-charge.index');
+            Route::post('delivery-charge', [DeliveryChargeController::class, 'update'])->name('delivery-charge.update');
+            Route::get('users', [UserController::class, 'index'])->name('users.index');
+            Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+            Route::patch('users/{user}', [UserController::class, 'update'])->name('users.update');
             // Product Stock start
             Route::resource('product-stocks', ProductStockBatchController::class);
             // Product end
@@ -75,8 +90,11 @@ Route::prefix('admin')
 //admin Route End
 
 Route::get('/', [FrontSiteController::class, 'index'])->name('home');
+Route::post('/visitor/ping', [OrderController::class, 'visitorPing'])->name('visitor.ping');
+Route::post('/visitor/register', [OrderController::class, 'registerVisitor'])->name('visitor.register');
 Route::post('/cart/add', [OrderController::class, 'addToCart'])->name('cart.add');
 Route::post('/cart/update-quantity', [OrderController::class, 'updateCartQuantity'])->name('cart.updateQuantity');
+Route::post('/order/complete', [OrderController::class, 'completeOrder'])->name('order.complete');
 Route::get('/cart', [OrderController::class, 'getCart'])->name('cart.get');
 
 Route::get('/dashboard', function () {

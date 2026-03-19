@@ -4,12 +4,90 @@ namespace App\Http\Controllers\Front_site;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cart;
+use App\Models\Order;
 use App\Models\Product;
+use App\Models\ProductStockBatch;
+use App\Models\StockOutLog;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
 {
+    private function deductProductStock(int $productId, int $requiredQuantity, int $orderId): void
+    {
+        $batches = ProductStockBatch::where('product_id', $productId)
+            ->where('quantity', '>', 0)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        $availableQuantity = $batches->sum('quantity');
+
+        if ($availableQuantity < $requiredQuantity) {
+            throw ValidationException::withMessages([
+                'stock' => ["Insufficient stock for product ID {$productId}. Available: {$availableQuantity}, required: {$requiredQuantity}."],
+            ]);
+        }
+
+        $remaining = $requiredQuantity;
+
+        foreach ($batches as $batch) {
+            if ($remaining <= 0) {
+                break;
+            }
+
+            $usedQuantity = min($remaining, $batch->quantity);
+
+            $batch->decrement('quantity', $usedQuantity);
+
+            StockOutLog::create([
+                'product_id' => $productId,
+                'batch_id' => $batch->id,
+                'order_id' => $orderId,
+                'quantity' => $usedQuantity,
+                'cost_per_unit' => $batch->cost_per_unit,
+            ]);
+
+            $remaining -= $usedQuantity;
+        }
+    }
+
+    private function buildVisitorMeta(Request $request): array
+    {
+        return [
+            'ip_address' => $request->ip(),
+            'last_user_agent' => substr((string) $request->userAgent(), 0, 65535),
+            'last_visit_at' => now(),
+            'last_logged_at' => now(),
+        ];
+    }
+
+    private function buildLocationData(array $validated): array
+    {
+        $locationPermission = $validated['location_permission'] ?? 'unknown';
+
+        return [
+            'location_permission' => $locationPermission,
+            'gps_lat' => $locationPermission === 'granted' ? ($validated['gps_lat'] ?? null) : null,
+            'gps_lng' => $locationPermission === 'granted' ? ($validated['gps_lng'] ?? null) : null,
+            'gps_address' => $locationPermission === 'granted' ? ($validated['gps_address'] ?? null) : null,
+        ];
+    }
+
+    private function storeVisitorMetaInSession(Request $request): array
+    {
+        $meta = $this->buildVisitorMeta($request);
+        $request->session()->put('visitor_meta', $meta);
+
+        return $meta;
+    }
+
     private function getCartFromSession(Request $request)
     {
         $cart = null;
@@ -61,6 +139,74 @@ class OrderController extends Controller
         return response()->json($this->getCartData($cart));
     }
 
+    public function visitorPing(Request $request)
+    {
+        $meta = $this->storeVisitorMetaInSession($request);
+
+        if ($request->session()->has('user_id')) {
+            $user = User::find($request->session()->get('user_id'));
+
+            if ($user) {
+                $user->update($meta);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'ip_address' => $meta['ip_address'],
+            'visited_at' => Carbon::parse($meta['last_visit_at'])->toDateTimeString(),
+        ]);
+    }
+
+    public function registerVisitor(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20',
+            'location_permission' => ['nullable', Rule::in(['granted', 'denied', 'prompt', 'unknown'])],
+            'gps_lat' => 'nullable|numeric|between:-90,90',
+            'gps_lng' => 'nullable|numeric|between:-180,180',
+            'gps_address' => 'nullable|string|max:1000',
+        ]);
+
+        $sessionMeta = $request->session()->get('visitor_meta', []);
+        $visitorMeta = array_merge($sessionMeta, $this->buildVisitorMeta($request));
+        $locationData = $this->buildLocationData($validated);
+
+        $user = User::where('phone', $validated['phone'])->first();
+
+        if ($user) {
+            $user->update(array_merge([
+                'name' => $validated['name'],
+            ], $visitorMeta, $locationData));
+        } else {
+            $user = User::create(array_merge([
+                'name' => $validated['name'],
+                'phone' => $validated['phone'],
+                'password' => Hash::make('visitor-'.uniqid()),
+            ], $visitorMeta, $locationData));
+        }
+
+        session([
+            'user_id' => $user->id,
+            'customer_name' => $user->name,
+            'customer_phone' => $user->phone,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Visitor information saved successfully.',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'phone' => $user->phone,
+                'ip_address' => $user->ip_address,
+                'location_permission' => $user->location_permission,
+                'saved_address' => $user->saved_address,
+            ],
+        ]);
+    }
+
     public function addToCart(Request $request)
     {
 
@@ -74,7 +220,9 @@ class OrderController extends Controller
         if ($request->has('phone')) {
             $user = User::updateOrCreate(
                 ['phone' => $validated['phone']],
-                ['name' => $validated['name']]
+                array_merge([
+                    'name' => $validated['name'],
+                ], $request->session()->get('visitor_meta', []), $this->buildVisitorMeta($request))
             );
             session(['user_id' => $user->id, 'customer_name' => $user->name, 'customer_phone' => $user->phone]);
         } elseif ($request->session()->has('user_id')) {
@@ -82,7 +230,11 @@ class OrderController extends Controller
         }
 
         if (! $user) {
-            return response()->json(['success' => false, 'error' => 'User not found.'], 400);
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'User not found.'], 404);
+            }
+
+            return redirect()->back()->with('error', 'User not found.');
         }
 
         $cart = Cart::firstOrCreate(
@@ -105,11 +257,17 @@ class OrderController extends Controller
             ]);
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Product added to cart successfully.',
-            'cart' => $this->getCartData($cart),
-        ]);
+        if ($request->expectsJson()) {
+            $updatedCart = $this->getCartFromSession($request);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product added to cart successfully.',
+                'cart' => $this->getCartData($updatedCart),
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Product added to cart successfully.');
     }
 
     public function updateCartQuantity(Request $request)
@@ -148,6 +306,112 @@ class OrderController extends Controller
             'success' => true,
             'message' => 'Cart updated successfully.',
             'cart' => $this->getCartData($updatedCart),
+        ]);
+    }
+
+    public function completeOrder(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20',
+            'address' => 'required|string|max:2000',
+            'selected_delivery_charge' => 'nullable|numeric|min:0',
+        ]);
+
+        $user = User::where('phone', $validated['phone'])->first();
+
+        if (! $user && $request->session()->has('user_id')) {
+            $user = User::find($request->session()->get('user_id'));
+        }
+
+        if (! $user) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found. Please save visitor information first.',
+                ], 404);
+            }
+
+            return redirect()->back()->with('error', 'User not found. Please save visitor information first.');
+        }
+
+        $cart = $this->getCartFromSession($request);
+
+        if (! $cart || $cart->items()->count() === 0) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cart is empty.',
+                ], 422);
+            }
+
+            return redirect()->back()->with('error', 'Cart is empty.');
+        }
+
+        $cart->load('items.product');
+
+        try {
+            $order = DB::transaction(function () use ($request, $validated, $user, $cart) {
+            $user->update(array_merge([
+                'name' => $validated['name'],
+                'saved_address' => $validated['address'],
+            ], $this->buildVisitorMeta($request)));
+
+            $totalAmount = $cart->items->sum(function ($item) {
+                return $item->quantity * $item->sell_price;
+            });
+
+            $order = Order::create([
+                'order_number' => 'ORD-'.now()->format('YmdHis').'-'.str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT),
+                'user_id' => $user->id,
+                'affiliate_id' => $cart->affiliate_id,
+                'order_type' => $cart->affiliate_id ? 'affiliate' : 'direct',
+                'total_amount' => $totalAmount,
+                'delivery_charge' => $validated['selected_delivery_charge'] ?? 0,
+            ]);
+
+            foreach ($cart->items as $item) {
+                $order->items()->create([
+                    'product_id' => $item->product_id,
+                    'quantity' => $item->quantity,
+                    'sell_price' => $item->sell_price,
+                ]);
+
+                $this->deductProductStock($item->product_id, $item->quantity, $order->id);
+            }
+
+            $cart->update(['status' => 'converted']);
+            $cart->items()->delete();
+
+            return $order;
+        });
+        } catch (ValidationException $exception) {
+            if ($request->expectsJson()) {
+                throw $exception;
+            }
+
+            return redirect()->back()->with('error', $exception->validator->errors()->first());
+        }
+
+        $request->session()->forget('cart_id');
+        session([
+            'user_id' => $user->id,
+            'customer_name' => $user->name,
+            'customer_phone' => $user->phone,
+        ]);
+
+        if (! $request->expectsJson()) {
+            return redirect()->route('home')->with('success', 'Order completed successfully. Order No: '.$order->order_number);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Order completed successfully.',
+            'order' => [
+                'id' => $order->id,
+                'order_number' => $order->order_number,
+                'total_amount' => $order->total_amount,
+            ],
         ]);
     }
 }

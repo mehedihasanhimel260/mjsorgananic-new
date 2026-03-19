@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Front_site;
 
 use App\Http\Controllers\Controller;
+use App\Models\DeliveryChargeSetting;
 use App\Models\Product;
 use Illuminate\Http\Request;
 
@@ -10,6 +11,8 @@ class FrontSiteController extends Controller
 {
     public function index()
     {
+        $deliverySetting = DeliveryChargeSetting::first();
+
         $products = Product::where('status', 'active')
             ->latest()
             ->get()
@@ -23,6 +26,6 @@ class FrontSiteController extends Controller
                 ];
             });
 
-        return view('front-site.index', compact('products'));
+        return view('front-site.index', compact('products', 'deliverySetting'));
     }
 }
