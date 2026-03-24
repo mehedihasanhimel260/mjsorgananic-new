@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Front_site;
 use App\Http\Controllers\Controller;
 use App\Models\Chat;
 use App\Models\Conversion;
+use App\Models\Faq;
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,9 +15,83 @@ use Illuminate\Support\Facades\Log;
 
 class ChatController extends Controller
 {
+    private function buildFaqContext(): string
+    {
+        $faqs = Faq::query()
+            ->select('question', 'answer', 'keyword')
+            ->latest()
+            ->take(20)
+            ->get();
+
+        if ($faqs->isEmpty()) {
+            return 'FAQ data not available.';
+        }
+
+        return $faqs->map(function (Faq $faq, int $index) {
+            return ($index + 1).'. Question: '.$faq->question
+                .' | Answer: '.$faq->answer
+                .' | Keyword: '.($faq->keyword ?: 'N/A');
+        })->implode("\n");
+    }
+
+    private function buildProductContext(): string
+    {
+        $products = Product::query()
+            ->where('status', 'active')
+            ->select('name', 'selling_price', 'short_description', 'long_description', 'keywords')
+            ->latest()
+            ->take(20)
+            ->get();
+
+        if ($products->isEmpty()) {
+            return 'Product data not available.';
+        }
+
+        return $products->map(function (Product $product, int $index) {
+            return ($index + 1).'. Product: '.$product->name
+                .' | Price: '.$product->selling_price
+                .' | Short Description: '.($product->short_description ?: 'N/A')
+                .' | Details: '.($product->long_description ?: 'N/A')
+                .' | Keywords: '.($product->keywords ?: 'N/A');
+        })->implode("\n");
+    }
+
+    private function buildAiPrompt(User $user, string $message): string
+    {
+        $faqContext = $this->buildFaqContext();
+        $productContext = $this->buildProductContext();
+
+        return <<<PROMPT
+তুমি MJS Organic-এর বাংলা কাস্টমার সাপোর্ট ও সেলস অ্যাসিস্ট্যান্ট।
+
+কঠোর নিয়ম:
+- সব উত্তর শুধু বাংলায় লিখবে।
+- উত্তর খুব ছোট রাখবে, সাধারণত 1 থেকে 3টি ছোট বাক্যে।
+- অপ্রয়োজনীয় ব্যাখ্যা, বড় paragraph, bullet list বা লম্বা marketing লেখা দেবে না।
+- কাস্টমারকে অর্ডার করতে আগ্রহী করার চেষ্টা করবে।
+- প্রোডাক্ট তথ্য থাকলে ইতিবাচক, বাস্তবসম্মত ও বিক্রয়-সহায়কভাবে বলবে।
+- FAQ থেকে উত্তর পাওয়া গেলে FAQ অনুযায়ী উত্তর দেবে।
+- ভুল তথ্য বানাবে না।
+- তথ্য না পেলে বা নিশ্চিত না হলে অবশ্যই বলবে:
+"দুঃখিত, এই বিষয়ে এই মুহূর্তে সঠিক তথ্য দিতে পারছি না। অনুগ্রহ করে আমাদের WhatsApp নম্বর 01309003117 এ যোগাযোগ করুন।"
+- প্রয়োজনে খুব ছোটভাবে বলবে: "নাম, মোবাইল নম্বর ও ঠিকানা দিলে অর্ডার প্রসেস করে দিতে পারি।"
+- উত্তর সংক্ষিপ্ত, মানবিক, সহায়ক ও বিক্রয়মুখী হবে।
+
+Customer Name: {$user->name}
+Customer Phone: {$user->phone}
+Customer Message: {$message}
+
+FAQ Data:
+{$faqContext}
+
+Product Data:
+{$productContext}
+PROMPT;
+    }
+
     private function formatChat(Chat $chat): array
     {
-        $chat->loadMissing(['user', 'conversions.admin']);
+        $chat->loadMissing(['user', 'conversions.admin', 'conversions.user']);
 
         return [
             'chat' => [
@@ -29,10 +105,12 @@ class ChatController extends Controller
                 return [
                     'id' => $conversion->id,
                     'text' => $conversion->convertion_message,
-                    'type' => $conversion->sender_type === 'admin' ? 'guest' : 'user',
-                    'sender_name' => $conversion->sender_type === 'admin'
-                        ? ($conversion->admin?->name ?? 'Admin')
-                        : ($conversion->user?->name ?? 'User'),
+                    'type' => in_array($conversion->sender_type, ['admin', 'ai'], true) ? 'guest' : 'user',
+                    'sender_name' => match ($conversion->sender_type) {
+                        'admin' => $conversion->admin?->name ?? 'Admin',
+                        'ai' => 'AI Assistant',
+                        default => $conversion->user?->name ?? 'User',
+                    },
                     'created_at' => $conversion->created_at?->format('Y-m-d H:i'),
                 ];
             })->values(),
@@ -142,6 +220,17 @@ class ChatController extends Controller
                     'user_id' => $user->id,
                     'sender_type' => 'user',
                     'convertion_message' => $validated['message'],
+                ]);
+
+                $aiPrompt = $this->buildAiPrompt($user, $validated['message']);
+                $aiResponse = active_ai_response($aiPrompt);
+
+                $chat->conversions()->create([
+                    'user_id' => $user->id,
+                    'sender_type' => 'ai',
+                    'convertion_message' => $aiResponse['success']
+                        ? $aiResponse['message']
+                        : 'AI assistant is currently unavailable. Please wait for a support reply.',
                 ]);
 
                 $chat->update([

@@ -98,6 +98,15 @@
                 </a>
             </li>
         </ul>
+        <p class="menu-label">AI Managment</p>
+        <ul class="menu-list">
+            <li>
+                <a href="{{ route('admin.ai-settings.index') }}" class="has-icon">
+                    <span class="icon"><i class="mdi mdi-robot-outline"></i></span>
+                    <span class="menu-item-label">AI</span>
+                </a>
+            </li>
+        </ul>
         <p class="menu-label">About</p>
         <ul class="menu-list">
             <li>

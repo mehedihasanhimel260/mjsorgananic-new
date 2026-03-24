@@ -8,7 +8,7 @@
   <button
     type="button"
     class="fixed bottom-5 right-5 z-50 rounded-full bg-indigo-600 px-5 py-4 text-sm font-semibold text-white shadow-lg transition hover:scale-110"
-    @click="toggleChat()">
+    @click="open = !open; if (open) { loadHistory(); } $nextTick(() => scrollToBottom())">
     Live Chat
   </button>
 
@@ -22,7 +22,7 @@
         <p class="text-sm font-semibold">Customer Support</p>
         <p class="text-xs text-indigo-100" x-text="chatTicket ? chatTicket : 'Start a chat'"></p>
       </div>
-      <button type="button" class="text-sm" @click="closeChat()">Close</button>
+      <button type="button" class="text-sm" @click="open = false">Close</button>
     </div>
 
     <div class="border-b bg-indigo-50 px-4 py-3 text-xs text-indigo-700" x-show="flashMessage">

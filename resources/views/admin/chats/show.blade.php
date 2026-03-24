@@ -44,7 +44,7 @@
                 @forelse ($chat->conversions as $conversion)
                 <div class="rounded-lg border px-4 py-3 {{ $conversion->sender_type === 'admin' ? 'bg-blue-50 border-blue-200 ml-10' : 'bg-gray-50 border-gray-200 mr-10' }}">
                     <div class="flex items-center justify-between gap-4">
-                        <strong>{{ $conversion->sender_type === 'admin' ? ($conversion->admin?->name ?? 'Admin') : ($conversion->user?->name ?? 'User') }}</strong>
+                        <strong>{{ $conversion->sender_type === 'admin' ? ($conversion->admin?->name ?? 'Admin') : ($conversion->sender_type === 'ai' ? 'AI Assistant' : ($conversion->user?->name ?? 'User')) }}</strong>
                         <small>{{ $conversion->created_at->format('Y-m-d H:i') }}</small>
                     </div>
                     <p class="mt-2 text-gray-700">{{ $conversion->convertion_message }}</p>

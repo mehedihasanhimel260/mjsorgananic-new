@@ -9,6 +9,7 @@ use App\Http\Controllers\ProfileController;
 
 //admin Route link start
 use App\Http\Controllers\Admin\Auth\LoginController;
+use App\Http\Controllers\Admin\AiSettingController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DeliveryChargeController;
 use App\Http\Controllers\Admin\FaqController;
@@ -85,6 +86,9 @@ Route::prefix('admin')
             Route::get('users', [UserController::class, 'index'])->name('users.index');
             Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
             Route::patch('users/{user}', [UserController::class, 'update'])->name('users.update');
+            Route::get('ai-settings', [AiSettingController::class, 'index'])->name('ai-settings.index');
+            Route::get('ai-settings/{aiSetting}/edit', [AiSettingController::class, 'edit'])->name('ai-settings.edit');
+            Route::patch('ai-settings/{aiSetting}', [AiSettingController::class, 'update'])->name('ai-settings.update');
             Route::get('chats', [AdminChatController::class, 'index'])->name('chats.index');
             Route::get('chats/{chat}', [AdminChatController::class, 'show'])->name('chats.show');
             Route::post('chats/{chat}/reply', [AdminChatController::class, 'reply'])->name('chats.reply');
