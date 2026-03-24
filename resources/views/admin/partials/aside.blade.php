@@ -80,6 +80,24 @@
                 </a>
             </li>
         </ul>
+        <p class="menu-label">Chat Managment</p>
+        <ul class="menu-list">
+            <li>
+                <a href="{{ route('admin.chats.index') }}" class="has-icon">
+                    <span class="icon"><i class="mdi mdi-chat-processing-outline"></i></span>
+                    <span class="menu-item-label">Chat</span>
+                </a>
+            </li>
+        </ul>
+        <p class="menu-label">FAQ Managment</p>
+        <ul class="menu-list">
+            <li>
+                <a href="{{ route('admin.faqs.index') }}" class="has-icon">
+                    <span class="icon"><i class="mdi mdi-frequently-asked-questions"></i></span>
+                    <span class="menu-item-label">FAQ</span>
+                </a>
+            </li>
+        </ul>
         <p class="menu-label">About</p>
         <ul class="menu-list">
             <li>

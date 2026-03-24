@@ -8,6 +8,7 @@
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 
 <body class="bg-gray-100">
@@ -33,7 +34,9 @@
 </div>
 
 @yield('content')
+@include('front-site.partials.chat')
 @include('front-site.partials.location')
+<script src="{{ asset('assets/js/chat.js') }}"></script>
 @stack("script")
 </body>
 </html>

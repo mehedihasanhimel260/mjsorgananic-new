@@ -39,4 +39,9 @@ class Admin extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function conversions()
+    {
+        return $this->hasMany(Conversion::class);
+    }
 }

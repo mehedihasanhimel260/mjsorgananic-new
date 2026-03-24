@@ -8,7 +8,14 @@ use Illuminate\Database\Eloquent\Model;
 class Order extends Model
 {
     use HasFactory;
-    protected $fillable = ['order_number', 'user_id', 'affiliate_id', 'order_type', 'total_amount', 'delivery_charge', 'discount_amount'];
+    protected $fillable = ['order_number', 'user_id', 'affiliate_id', 'order_type', 'total_amount', 'delivery_charge', 'discount_amount', 'order_status', 'track_id', 'courier_api_response'];
+
+    protected function casts(): array
+    {
+        return [
+            'courier_api_response' => 'array',
+        ];
+    }
 
     public function user()
     {

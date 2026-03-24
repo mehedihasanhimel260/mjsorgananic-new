@@ -70,4 +70,14 @@ class User extends Authenticatable
             'last_logged_at' => 'datetime',
         ];
     }
+
+    public function chats()
+    {
+        return $this->hasMany(Chat::class);
+    }
+
+    public function conversions()
+    {
+        return $this->hasMany(Conversion::class);
+    }
 }
