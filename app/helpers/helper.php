@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\AiSetting;
+use App\Models\FbSetting;
 use Illuminate\Support\Facades\Http;
 
 if (! function_exists('gemini_api_response')) {
@@ -138,5 +139,38 @@ if (! function_exists('active_ai_response')) {
                 'message' => 'Unsupported AI provider selected.',
             ],
         };
+    }
+}
+
+if (! function_exists('fb_send_page_message')) {
+    function fb_send_page_message(string $psid, string $message): array
+    {
+        $setting = FbSetting::first();
+
+        if (! $setting || ! $setting->access_token) {
+            return [
+                'success' => false,
+                'message' => 'Facebook access token is not configured.',
+            ];
+        }
+
+        $response = Http::timeout(30)
+            ->withToken($setting->access_token)
+            ->post('https://graph.facebook.com/v22.0/me/messages', [
+                'recipient' => [
+                    'id' => $psid,
+                ],
+                'message' => [
+                    'text' => $message,
+                ],
+            ]);
+
+        $data = $response->json();
+
+        return [
+            'success' => $response->successful(),
+            'message' => $data['error']['message'] ?? 'ok',
+            'raw' => $data,
+        ];
     }
 }

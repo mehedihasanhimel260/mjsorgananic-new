@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\Auth\LoginController;
 use App\Http\Controllers\Admin\AiSettingController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DeliveryChargeController;
+use App\Http\Controllers\Admin\FbSettingController;
 use App\Http\Controllers\Admin\FaqController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Front_site\ChatController as FrontChatController;
 use App\Http\Controllers\Front_site\FrontSiteController;
 use App\Http\Controllers\Front_site\OrderController;
+use App\Http\Controllers\FbWebhookController;
 //admin Route link End
 
 //admin Route start
@@ -89,6 +91,8 @@ Route::prefix('admin')
             Route::get('ai-settings', [AiSettingController::class, 'index'])->name('ai-settings.index');
             Route::get('ai-settings/{aiSetting}/edit', [AiSettingController::class, 'edit'])->name('ai-settings.edit');
             Route::patch('ai-settings/{aiSetting}', [AiSettingController::class, 'update'])->name('ai-settings.update');
+            Route::get('fb-settings', [FbSettingController::class, 'index'])->name('fb-settings.index');
+            Route::post('fb-settings', [FbSettingController::class, 'update'])->name('fb-settings.update');
             Route::get('chats', [AdminChatController::class, 'index'])->name('chats.index');
             Route::get('chats/{chat}', [AdminChatController::class, 'show'])->name('chats.show');
             Route::post('chats/{chat}/reply', [AdminChatController::class, 'reply'])->name('chats.reply');
@@ -106,6 +110,8 @@ Route::prefix('admin')
 //admin Route End
 
 Route::get('/', [FrontSiteController::class, 'index'])->name('home');
+Route::get('/facebook/webhook', [FbWebhookController::class, 'verify'])->name('facebook.webhook.verify');
+Route::post('/facebook/webhook', [FbWebhookController::class, 'receive'])->name('facebook.webhook.receive');
 Route::post('/visitor/ping', [OrderController::class, 'visitorPing'])->name('visitor.ping');
 Route::post('/visitor/register', [OrderController::class, 'registerVisitor'])->name('visitor.register');
 Route::post('/cart/add', [OrderController::class, 'addToCart'])->name('cart.add');
