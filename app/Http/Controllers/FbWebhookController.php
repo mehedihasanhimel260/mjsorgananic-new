@@ -36,7 +36,7 @@ class FbWebhookController extends Controller
         $products = Product::query()
             ->where('status', 'active')
             ->select('name', 'selling_price', 'short_description', 'long_description', 'keywords')
-            ->latest()
+            ->oldest()
             ->take(20)
             ->get();
 
@@ -63,7 +63,8 @@ class FbWebhookController extends Controller
 
 কঠোর নিয়ম:
 - সব উত্তর শুধু বাংলায় লিখবে।
-- উত্তর খুব ছোট রাখবে, সাধারণত 1 থেকে 3টি ছোট বাক্যে।
+- সালাম দিবে, নমস্কার বলবে না।
+- উত্তর এক বাক্যে দিন, প্রয়োজন হলে সর্বোচ্চ দুইটি।
 - অপ্রয়োজনীয় ব্যাখ্যা, বড় paragraph, bullet list বা লম্বা marketing লেখা দেবে না।
 - কাস্টমারকে অর্ডার করতে আগ্রহী করার চেষ্টা করবে।
 - প্রোডাক্ট তথ্য থাকলে ইতিবাচক, বাস্তবসম্মত ও বিক্রয়-সহায়কভাবে বলবে।
