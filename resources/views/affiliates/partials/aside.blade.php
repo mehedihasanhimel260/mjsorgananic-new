@@ -44,6 +44,12 @@
                     <span class="menu-item-label">Wallet</span>
                 </a>
             </li>
+            <li>
+                <a href="{{ route('affiliates.wallet.index') }}#withdraw-request" class="has-icon">
+                    <span class="icon"><i class="mdi mdi-cash-fast"></i></span>
+                    <span class="menu-item-label">Withdraw</span>
+                </a>
+            </li>
         </ul>
         <p class="menu-label">Account</p>
         <ul class="menu-list">

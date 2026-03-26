@@ -31,6 +31,8 @@ use App\Http\Controllers\Affiliate\AccountController as AffiliateAccountControll
 use App\Http\Controllers\Affiliate\DashboardController as AffiliateDashboardController;
 use App\Http\Controllers\Affiliate\LinkController as AffiliateLinkController;
 use App\Http\Controllers\Affiliate\ReportController as AffiliateReportController;
+use App\Http\Controllers\Affiliate\WithdrawController as AffiliateWithdrawController;
+use App\Http\Controllers\Admin\AffiliateWithdrawController as AdminAffiliateWithdrawController;
 use App\Http\Controllers\Front_site\AffiliateTrackingController;
 use App\Http\Controllers\Front_site\ChatController as FrontChatController;
 use App\Http\Controllers\Front_site\FrontSiteController;
@@ -113,6 +115,11 @@ Route::prefix('admin')
             Route::get('users', [UserController::class, 'index'])->name('users.index');
             Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
             Route::patch('users/{user}', [UserController::class, 'update'])->name('users.update');
+            Route::get('affiliate-withdraws', [AdminAffiliateWithdrawController::class, 'index'])->name('affiliate-withdraws.index');
+            Route::get('affiliate-withdraws/{affiliateWithdrawRequest}', [AdminAffiliateWithdrawController::class, 'show'])->name('affiliate-withdraws.show');
+            Route::post('affiliate-withdraws/{affiliateWithdrawRequest}/approve', [AdminAffiliateWithdrawController::class, 'approve'])->name('affiliate-withdraws.approve');
+            Route::post('affiliate-withdraws/{affiliateWithdrawRequest}/reject', [AdminAffiliateWithdrawController::class, 'reject'])->name('affiliate-withdraws.reject');
+            Route::post('affiliate-withdraws/{affiliateWithdrawRequest}/mark-paid', [AdminAffiliateWithdrawController::class, 'markPaid'])->name('affiliate-withdraws.mark-paid');
             Route::get('ai-settings', [AiSettingController::class, 'index'])->name('ai-settings.index');
             Route::get('ai-settings/{aiSetting}/edit', [AiSettingController::class, 'edit'])->name('ai-settings.edit');
             Route::patch('ai-settings/{aiSetting}', [AiSettingController::class, 'update'])->name('ai-settings.update');
@@ -167,6 +174,7 @@ Route::prefix('affiliates')
             Route::get('/orders', [AffiliateReportController::class, 'orders'])->name('orders.index');
             Route::get('/commissions', [AffiliateReportController::class, 'commissions'])->name('commissions.index');
             Route::get('/wallet', [AffiliateReportController::class, 'wallet'])->name('wallet.index');
+            Route::post('/wallet/withdraw', [AffiliateWithdrawController::class, 'store'])->name('wallet.withdraw.store');
             Route::post('/logout', [AffiliateAuthController::class, 'logout'])->name('logout');
         });
     });

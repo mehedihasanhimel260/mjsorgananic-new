@@ -67,6 +67,15 @@
                 </a>
             </li>
         </ul>
+        <p class="menu-label">Affiliate Managment</p>
+        <ul class="menu-list">
+            <li>
+                <a href="{{ route('admin.affiliate-withdraws.index') }}" class="has-icon">
+                    <span class="icon"><i class="mdi mdi-cash-refund"></i></span>
+                    <span class="menu-item-label">Withdraw Requests</span>
+                </a>
+            </li>
+        </ul>
         <p class="menu-label">Chat Managment</p>
         <ul class="menu-list">
             <li>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Affiliate;
 
 use App\Http\Controllers\Controller;
 use App\Models\AffiliateCommission;
+use App\Models\AffiliateWithdrawRequest;
 use App\Models\AffiliateWalletTransaction;
 use App\Models\Order;
 
@@ -41,6 +42,21 @@ class ReportController extends Controller
             ->latest()
             ->paginate(20);
 
-        return view('affiliates.wallet.index', compact('transactions'));
+        $withdrawRequests = AffiliateWithdrawRequest::where('affiliate_id', $affiliate->id)
+            ->latest('requested_at')
+            ->paginate(20, ['*'], 'withdraw_page');
+
+        $summary = [
+            'balance' => (float) $affiliate->balance,
+            'minimum_withdraw' => 500,
+            'pending_withdraw' => (float) AffiliateWithdrawRequest::where('affiliate_id', $affiliate->id)
+                ->where('status', AffiliateWithdrawRequest::STATUS_PENDING)
+                ->sum('amount'),
+            'total_withdrawn' => (float) AffiliateWithdrawRequest::where('affiliate_id', $affiliate->id)
+                ->where('status', AffiliateWithdrawRequest::STATUS_PAID)
+                ->sum('amount'),
+        ];
+
+        return view('affiliates.wallet.index', compact('transactions', 'withdrawRequests', 'summary'));
     }
 }

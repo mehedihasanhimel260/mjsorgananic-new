@@ -59,4 +59,9 @@ class Affiliate extends Authenticatable
     {
         return $this->hasMany(AffiliateWalletTransaction::class);
     }
+
+    public function withdrawRequests()
+    {
+        return $this->hasMany(AffiliateWithdrawRequest::class);
+    }
 }
