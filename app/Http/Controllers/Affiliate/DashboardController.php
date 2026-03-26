@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Affiliate;
 use App\Http\Controllers\Controller;
 use App\Models\AffiliateCommission;
 use App\Models\AffiliateLink;
+use App\Models\AffiliateWithdrawRequest;
 use App\Models\AffiliateWalletTransaction;
 use App\Models\Order;
 
@@ -40,6 +41,16 @@ class DashboardController extends Controller
         $walletTransactions = (clone $walletQuery)->take(10)->get();
         $totalWalletCredit = (float) (clone $walletQuery)->where('type', 'credit')->sum('amount');
         $totalWalletDebit = (float) (clone $walletQuery)->where('type', 'debit')->sum('amount');
+        $withdrawRequests = AffiliateWithdrawRequest::where('affiliate_id', $affiliate->id)
+            ->latest('requested_at')
+            ->take(10)
+            ->get();
+        $pendingWithdrawAmount = (float) AffiliateWithdrawRequest::where('affiliate_id', $affiliate->id)
+            ->where('status', AffiliateWithdrawRequest::STATUS_PENDING)
+            ->sum('amount');
+        $totalWithdrawn = (float) AffiliateWithdrawRequest::where('affiliate_id', $affiliate->id)
+            ->where('status', AffiliateWithdrawRequest::STATUS_PAID)
+            ->sum('amount');
 
         $summary = [
             'total_links' => AffiliateLink::where('affiliate_id', $affiliate->id)->count(),
@@ -48,6 +59,9 @@ class DashboardController extends Controller
             'wallet_credit' => $totalWalletCredit,
             'wallet_debit' => $totalWalletDebit,
             'balance' => (float) $affiliate->balance,
+            'total_withdrawn' => $totalWithdrawn,
+            'pending_withdraw' => $pendingWithdrawAmount,
+            'minimum_withdraw' => 500,
         ];
 
         return view('affiliates.dashboard.index', compact(
@@ -57,6 +71,7 @@ class DashboardController extends Controller
             'recentOrders',
             'recentCommissions',
             'walletTransactions',
+            'withdrawRequests',
             'summary'
         ));
     }

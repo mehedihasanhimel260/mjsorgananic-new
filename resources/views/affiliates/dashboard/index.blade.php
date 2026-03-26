@@ -87,6 +87,28 @@
             <div class="card-content">
                 <div class="flex items-center justify-between">
                     <div>
+                        <p class="text-sm text-gray-500">Pending Withdraw</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ number_format($summary['pending_withdraw'], 2) }}</p>
+                    </div>
+                    <span class="icon text-orange-500"><i class="mdi mdi-timer-sand mdi-36px"></i></span>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-content">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Total Withdrawn</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ number_format($summary['total_withdrawn'], 2) }}</p>
+                    </div>
+                    <span class="icon text-red-500"><i class="mdi mdi-bank-transfer-out mdi-36px"></i></span>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-content">
+                <div class="flex items-center justify-between">
+                    <div>
                         <p class="text-sm text-gray-500">Quick Action</p>
                         <a href="{{ route('affiliates.links.index') }}" class="button blue mt-2">
                             <span class="icon"><i class="mdi mdi-link-plus"></i></span>
@@ -250,6 +272,47 @@
                     @empty
                     <tr>
                         <td colspan="4" class="has-text-centered">No wallet transaction found.</td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="withdraw-history" class="card has-table mt-6">
+        <header class="card-header">
+            <p class="card-header-title">
+                <span class="icon"><i class="mdi mdi-cash-fast"></i></span>
+                Recent Withdraw Requests
+            </p>
+            <a href="{{ route('affiliates.wallet.index') }}#withdraw-request" class="button blue">
+                <span class="icon"><i class="mdi mdi-eye"></i></span>
+                <span>Manage</span>
+            </a>
+        </header>
+        <div class="card-content">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Amount</th>
+                        <th>Method</th>
+                        <th>Status</th>
+                        <th>Requested</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($withdrawRequests as $request)
+                    <tr>
+                        <td>#{{ $request->id }}</td>
+                        <td>{{ number_format((float) $request->amount, 2) }}</td>
+                        <td>{{ ucfirst($request->account_type) }}</td>
+                        <td>{{ ucfirst($request->status) }}</td>
+                        <td>{{ optional($request->requested_at)->format('Y-m-d h:i A') }}</td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="5" class="has-text-centered">No withdraw request found.</td>
                     </tr>
                     @endforelse
                 </tbody>
