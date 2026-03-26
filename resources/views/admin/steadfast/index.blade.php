@@ -71,5 +71,20 @@
             </div>
         </div>
     </div>
+    <div class="card mt-6">
+        <header class="card-header">
+            <p class="card-header-title">
+                <span class="icon"><i class="mdi mdi-cron"></i></span>
+                cPanel Cron Guide
+            </p>
+        </header>
+        <div class="card-content">
+            <p class="mb-3">Use this cron command in cPanel so Steadfast order status and balance sync every 6 hours.</p>
+            <div class="notification is-light">
+                <code>* */6 * * * curl -s {{ route('steadfast.schedule-run') }}</code>
+            </div>
+            <p class="text-sm text-gray-600">This URL trigger checks non-final courier orders, updates delivery status from Steadfast, and refreshes current balance.</p>
+        </div>
+    </div>
 </section>
 @endsection

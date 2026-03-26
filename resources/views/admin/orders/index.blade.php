@@ -23,6 +23,7 @@
                         <th>Phone</th>
                         <th>Type</th>
                         <th>Total</th>
+                        <th>Order Status</th>
                         <th>Products</th>
                         <th>Quantity</th>
                         <th>Affiliate</th>
@@ -39,6 +40,7 @@
                         <td data-label="Phone">{{ $order->user?->phone ?? 'N/A' }}</td>
                         <td data-label="Type">{{ ucfirst($order->order_type) }}</td>
                         <td data-label="Total">{{ $order->total_amount }}</td>
+                        <td data-label="Order Status">{{ $order->order_status ?? 'Pending' }}</td>
                         <td data-label="Products">
                             {{ $order->items->pluck('product.name')->filter()->join(', ') ?: 'N/A' }}
                         </td>
@@ -57,7 +59,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="11" class="has-text-centered">No orders found.</td>
+                        <td colspan="12" class="has-text-centered">No orders found.</td>
                     </tr>
                     @endforelse
                 </tbody>

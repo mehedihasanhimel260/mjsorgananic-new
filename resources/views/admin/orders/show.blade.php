@@ -30,6 +30,25 @@
                     <p><strong>Track ID:</strong> {{ $order->track_id ?? 'N/A' }}</p>
                     <p><strong>Courier API Response:</strong> {{ $bookingSuccess ? 'Received' : 'Not booked yet' }}</p>
                     <p><strong>Created:</strong> {{ $order->created_at->format('Y-m-d H:i') }}</p>
+                    <div class="mt-4 flex flex-wrap gap-3">
+                        <form action="{{ route('admin.orders.status.update', $order->id) }}" method="POST" onsubmit="return confirm('Mark this order as cancelled?')">
+                            @csrf
+                            <input type="hidden" name="order_status" value="cancelled">
+                            <button type="submit" class="button red">
+                                <span class="icon"><i class="mdi mdi-cancel"></i></span>
+                                <span>Mark Cancelled</span>
+                            </button>
+                        </form>
+                        @if ($order->track_id)
+                        <form action="{{ route('admin.orders.sync-courier-status', $order->id) }}" method="POST">
+                            @csrf
+                            <button type="submit" class="button blue">
+                                <span class="icon"><i class="mdi mdi-refresh"></i></span>
+                                <span>Sync Courier Status</span>
+                            </button>
+                        </form>
+                        @endif
+                    </div>
                 </div>
                 <div>
                     <h3 class="title is-5 mb-4">Customer Information</h3>

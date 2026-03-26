@@ -1,4 +1,4 @@
-<aside class="aside is-placed-left is-expanded">
+<aside class="aside is-placed-left is-expanded h-screen overflow-y-auto overflow-x-hidden">
     <div class="aside-tools">
         <div>
             <a href="{{ route('home') }}" target="_blank" rel="noopener noreferrer"

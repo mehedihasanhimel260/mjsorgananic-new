@@ -3,24 +3,19 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\SteadfastSetting;
+use App\Services\SteadfastService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Artisan;
 
 class SteadfastController extends Controller
 {
-    private const BASE_URL = 'https://portal.packzy.com/api/v1';
-
-    private function getSetting(): SteadfastSetting
+    public function __construct(private readonly SteadfastService $steadfastService)
     {
-        return SteadfastSetting::firstOrCreate([], [
-            'current_balance' => 0,
-        ]);
     }
 
     public function index()
     {
-        $setting = $this->getSetting();
+        $setting = $this->steadfastService->getSetting();
 
         return view('admin.steadfast.index', compact('setting'));
     }
@@ -32,7 +27,7 @@ class SteadfastController extends Controller
             'secret_key' => 'required|string|max:255',
         ]);
 
-        $setting = $this->getSetting();
+        $setting = $this->steadfastService->getSetting();
         $setting->update($validated);
 
         return redirect()->route('admin.steadfast.index')->with('success', 'Steadfast credentials updated successfully.');
@@ -40,39 +35,24 @@ class SteadfastController extends Controller
 
     public function refreshBalance()
     {
-        $setting = $this->getSetting();
-
-        if (! $setting->api_key || ! $setting->secret_key) {
-            return redirect()->route('admin.steadfast.index')->with('error', 'Please save Api-Key and Secret-Key first.');
-        }
-
         try {
-            $response = Http::timeout(20)
-                ->withHeaders([
-                    'Api-Key' => $setting->api_key,
-                    'Secret-Key' => $setting->secret_key,
-                    'Content-Type' => 'application/json',
-                ])
-                ->get(self::BASE_URL.'/get_balance');
+            $result = $this->steadfastService->refreshBalance();
 
-            if (! $response->successful()) {
-                return redirect()->route('admin.steadfast.index')->with('error', 'Steadfast balance refresh failed.');
-            }
-
-            $data = $response->json();
-
-            if (! isset($data['current_balance'])) {
-                return redirect()->route('admin.steadfast.index')->with('error', 'Invalid balance response from Steadfast.');
-            }
-
-            $setting->update([
-                'current_balance' => $data['current_balance'],
-                'last_balance_synced_at' => now(),
-            ]);
-
-            return redirect()->route('admin.steadfast.index')->with('success', 'Steadfast balance refreshed successfully.');
+            return redirect()->route('admin.steadfast.index')
+                ->with($result['success'] ? 'success' : 'error', $result['message']);
         } catch (\Throwable $exception) {
             return redirect()->route('admin.steadfast.index')->with('error', 'Could not connect to Steadfast: '.$exception->getMessage());
         }
+    }
+
+    public function runSchedule()
+    {
+        Artisan::call('steadfast:sync-status');
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Steadfast sync completed.',
+            'output' => trim(Artisan::output()),
+        ]);
     }
 }

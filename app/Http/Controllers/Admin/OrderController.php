@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductStockBatch;
 use App\Models\StockOutLog;
 use App\Models\SteadfastSetting;
+use App\Services\SteadfastService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -17,6 +18,10 @@ use Illuminate\Validation\ValidationException;
 class OrderController extends Controller
 {
     private const STEADFAST_BASE_URL = 'https://portal.packzy.com/api/v1';
+
+    public function __construct(private readonly SteadfastService $steadfastService)
+    {
+    }
 
     private function deductProductStock(int $productId, int $requiredQuantity, int $orderId): void
     {
@@ -107,6 +112,7 @@ class OrderController extends Controller
     public function index()
     {
         $orders = Order::with(['user', 'affiliate', 'items.product'])
+            ->orderByRaw("CASE WHEN order_status IS NULL OR order_status = 'pending' THEN 0 ELSE 1 END")
             ->latest()
             ->get();
 
@@ -156,6 +162,19 @@ class OrderController extends Controller
         ]);
 
         return redirect()->route('admin.orders.show', $order->id)->with('success', 'Delivery charge updated successfully.');
+    }
+
+    public function updateStatus(Request $request, Order $order)
+    {
+        $validated = $request->validate([
+            'order_status' => 'required|in:cancelled',
+        ]);
+
+        $order->update([
+            'order_status' => $validated['order_status'],
+        ]);
+
+        return redirect()->route('admin.orders.show', $order->id)->with('success', 'Order status updated successfully.');
     }
 
     public function updateItem(Request $request, Order $order, int $itemId)
@@ -290,6 +309,18 @@ class OrderController extends Controller
             ]);
 
             return redirect()->route('admin.orders.show', $order->id)->with('error', 'Could not connect to Steadfast: '.$exception->getMessage());
+        }
+    }
+
+    public function syncCourierStatus(Order $order)
+    {
+        try {
+            $result = $this->steadfastService->syncOrderStatus($order);
+
+            return redirect()->route('admin.orders.show', $order->id)
+                ->with($result['success'] ? 'success' : 'error', $result['message']);
+        } catch (\Throwable $exception) {
+            return redirect()->route('admin.orders.show', $order->id)->with('error', 'Could not sync courier status: '.$exception->getMessage());
         }
     }
 }
