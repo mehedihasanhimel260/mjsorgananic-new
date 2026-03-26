@@ -33,7 +33,16 @@
                 </div>
                 <div>
                     <h3 class="title is-5 mb-4">Customer Information</h3>
-                    <p><strong>Name:</strong> {{ $order->user?->name ?? 'N/A' }}</p>
+                    <p>
+                        <strong>Name:</strong>
+                        @if ($order->user)
+                        <a href="{{ route('admin.users.edit', $order->user->id) }}" class="text-blue-600 hover:underline">
+                            {{ $order->user->name }}
+                        </a>
+                        @else
+                        N/A
+                        @endif
+                    </p>
                     <p><strong>Phone:</strong> {{ $order->user?->phone ?? 'N/A' }}</p>
                     <p><strong>Address:</strong> {{ $order->user?->saved_address ?? 'N/A' }}</p>
                     <p><strong>Affiliate:</strong> {{ $order->affiliate?->name ?? 'Direct Order' }}</p>
@@ -65,6 +74,60 @@
             </div>
         </header>
         <div class="card-content">
+            <form action="{{ route('admin.orders.items.add', $order->id) }}" method="POST" class="mb-5">
+                @csrf
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div class="md:col-span-2">
+                        <label class="label">Add Product</label>
+                        <div class="control">
+                            <select name="product_id" class="input" required>
+                                <option value="">Select product</option>
+                                @foreach ($products as $product)
+                                <option value="{{ $product->id }}">{{ $product->name }} - {{ $product->selling_price }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="label">Quantity</label>
+                        <div class="control">
+                            <input class="input" type="number" name="quantity" min="1" value="1" required>
+                        </div>
+                    </div>
+                    <div>
+                        <button type="submit" class="button green w-full">
+                            <span class="icon"><i class="mdi mdi-plus"></i></span>
+                            <span>Add Product</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+            @if ($deliverySetting)
+            <form action="{{ route('admin.orders.delivery-charge.update', $order->id) }}" method="POST" class="mb-5">
+                @csrf
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <div class="md:col-span-2">
+                        <label class="label">Delivery Charge</label>
+                        <div class="flex flex-wrap gap-4">
+                            <label class="inline-flex items-center gap-2">
+                                <input type="radio" name="delivery_location" value="inside_dhaka" {{ (float) ($order->delivery_charge ?? 0) === (float) ($deliverySetting->inside_dhaka_delivery_charge ?? 0) ? 'checked' : '' }}>
+                                <span>Inside Dhaka ({{ $deliverySetting->inside_dhaka_delivery_charge ?? 0 }})</span>
+                            </label>
+                            <label class="inline-flex items-center gap-2">
+                                <input type="radio" name="delivery_location" value="outside_dhaka" {{ (float) ($order->delivery_charge ?? 0) === (float) ($deliverySetting->outside_dhaka_delivery_charge ?? 0) ? 'checked' : '' }}>
+                                <span>Outside Dhaka ({{ $deliverySetting->outside_dhaka_delivery_charge ?? 0 }})</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <button type="submit" class="button blue w-full">
+                            <span class="icon"><i class="mdi mdi-truck-check-outline"></i></span>
+                            <span>Update Delivery</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+            @endif
             <form id="discount-form" action="{{ route('admin.orders.discount.update', $order->id) }}" method="POST" class="hidden mb-4">
                 @csrf
                 <div class="field grouped">
@@ -84,6 +147,7 @@
                         <th>Quantity</th>
                         <th>Sell Price</th>
                         <th>Subtotal</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -91,27 +155,43 @@
                     <tr>
                         <td>{{ $loop->iteration }}</td>
                         <td data-label="Product">{{ $item->product?->name ?? 'N/A' }}</td>
-                        <td data-label="Quantity">{{ $item->quantity }}</td>
+                        <td data-label="Quantity">
+                            <form action="{{ route('admin.orders.items.update', [$order->id, $item->id]) }}" method="POST" class="flex gap-2 items-center">
+                                @csrf
+                                <input class="input" type="number" name="quantity" min="1" value="{{ $item->quantity }}" style="max-width: 90px;" required>
+                                <button type="submit" class="button small blue">
+                                    <span class="icon"><i class="mdi mdi-check"></i></span>
+                                </button>
+                            </form>
+                        </td>
                         <td data-label="Sell Price">{{ $item->sell_price }}</td>
                         <td data-label="Subtotal">{{ $item->quantity * $item->sell_price }}</td>
+                        <td data-label="Action">
+                            <form action="{{ route('admin.orders.items.remove', [$order->id, $item->id]) }}" method="POST" onsubmit="return confirm('Remove this product from the order?')">
+                                @csrf
+                                <button type="submit" class="button small red">
+                                    <span class="icon"><i class="mdi mdi-delete"></i></span>
+                                </button>
+                            </form>
+                        </td>
                     </tr>
                     @endforeach
                 </tbody>
                 <tfoot>
                     <tr>
-                        <th colspan="4" class="has-text-right">Product Total</th>
+                        <th colspan="5" class="has-text-right">Product Total</th>
                         <th>{{ $productTotal }}</th>
                     </tr>
                     <tr>
-                        <th colspan="4" class="has-text-right">Delivery Charge</th>
+                        <th colspan="5" class="has-text-right">Delivery Charge</th>
                         <th>{{ $order->delivery_charge ?? 0 }}</th>
                     </tr>
                     <tr>
-                        <th colspan="4" class="has-text-right">Discount Amount</th>
+                        <th colspan="5" class="has-text-right">Discount Amount</th>
                         <th>{{ $order->discount_amount ?? 0 }}</th>
                     </tr>
                     <tr>
-                        <th colspan="4" class="has-text-right">Grand Total</th>
+                        <th colspan="5" class="has-text-right">Grand Total</th>
                         <th>{{ $grandTotal }}</th>
                     </tr>
                 </tfoot>

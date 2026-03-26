@@ -2,9 +2,45 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>MJS-Organic Shop</title>
+  @php
+    $seoTitle = $seoSetting?->title ?: ($seoSetting?->site_name ?: 'MJS Organic');
+    $seoSubtitle = $seoSetting?->subtitle ? ' - ' . $seoSetting->subtitle : '';
+    $metaDescription = $seoSetting?->meta_description ?: $seoSetting?->subtitle;
+    $appleTouchIcon = $seoSetting?->apple_touch_icon ? asset($seoSetting->apple_touch_icon) : asset('assets/apple-touch-icon.png');
+    $favicon32 = $seoSetting?->favicon_32 ? asset($seoSetting->favicon_32) : asset('assets/favicon-32x32.png');
+    $favicon16 = $seoSetting?->favicon_16 ? asset($seoSetting->favicon_16) : asset('assets/favicon-16x16.png');
+    $maskIcon = $seoSetting?->mask_icon ? asset($seoSetting->mask_icon) : asset('assets/safari-pinned-tab.svg');
+    $maskIconColor = $seoSetting?->mask_icon_color ?: '#00b4b6';
+    $ogUrl = $seoSetting?->og_url ?: url()->current();
+    $ogSiteName = $seoSetting?->og_site_name ?: ($seoSetting?->site_name ?: config('app.name'));
+    $ogTitle = $seoSetting?->og_title ?: $seoTitle;
+    $ogDescription = $seoSetting?->og_description ?: $metaDescription;
+    $ogImage = $seoSetting?->og_image ?: $appleTouchIcon;
+    $twitterCard = $seoSetting?->twitter_card ?: 'summary_large_image';
+    $twitterTitle = $seoSetting?->twitter_title ?: $ogTitle;
+    $twitterDescription = $seoSetting?->twitter_description ?: $ogDescription;
+    $twitterImage = $seoSetting?->twitter_image ?: $ogImage;
+  @endphp
+  <title>{{ $seoTitle . $seoSubtitle }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="csrf-token" content="{{ csrf_token() }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ $appleTouchIcon }}"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ $favicon32 }}"/>
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ $favicon16 }}"/>
+  <link rel="mask-icon" href="{{ $maskIcon }}" color="{{ $maskIconColor }}"/>
+  <meta name="description" content="{{ $metaDescription }}">
+  @if(!empty($seoSetting?->meta_keywords))
+  <meta name="keywords" content="{{ $seoSetting->meta_keywords }}">
+  @endif
+  <meta property="og:url" content="{{ $ogUrl }}">
+  <meta property="og:site_name" content="{{ $ogSiteName }}">
+  <meta property="og:title" content="{{ $ogTitle }}">
+  <meta property="og:description" content="{{ $ogDescription }}">
+  <meta property="og:image" content="{{ $ogImage }}">
+  <meta property="twitter:card" content="{{ $twitterCard }}">
+  <meta property="twitter:title" content="{{ $twitterTitle }}">
+  <meta property="twitter:description" content="{{ $twitterDescription }}">
+  <meta property="twitter:image:src" content="{{ $twitterImage }}">
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>

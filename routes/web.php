@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\FaqController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductStockBatchController;
+use App\Http\Controllers\Admin\SeoSettingController;
 use App\Http\Controllers\Admin\SteadfastController;
 use App\Http\Controllers\Admin\ChatController as AdminChatController;
 use App\Http\Controllers\Admin\UserController;
@@ -79,6 +80,10 @@ Route::prefix('admin')
             Route::get('orders', [AdminOrderController::class, 'index'])->name('orders.index');
             Route::get('orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
             Route::post('orders/{order}/discount', [AdminOrderController::class, 'updateDiscount'])->name('orders.discount.update');
+            Route::post('orders/{order}/delivery-charge', [AdminOrderController::class, 'updateDeliveryCharge'])->name('orders.delivery-charge.update');
+            Route::post('orders/{order}/items', [AdminOrderController::class, 'addItem'])->name('orders.items.add');
+            Route::post('orders/{order}/items/{itemId}', [AdminOrderController::class, 'updateItem'])->name('orders.items.update');
+            Route::post('orders/{order}/items/{itemId}/remove', [AdminOrderController::class, 'removeItem'])->name('orders.items.remove');
             Route::post('orders/{order}/book-courier', [AdminOrderController::class, 'bookCourier'])->name('orders.book-courier');
             Route::get('steadfast', [SteadfastController::class, 'index'])->name('steadfast.index');
             Route::post('steadfast', [SteadfastController::class, 'update'])->name('steadfast.update');
@@ -93,6 +98,8 @@ Route::prefix('admin')
             Route::patch('ai-settings/{aiSetting}', [AiSettingController::class, 'update'])->name('ai-settings.update');
             Route::get('fb-settings', [FbSettingController::class, 'index'])->name('fb-settings.index');
             Route::post('fb-settings', [FbSettingController::class, 'update'])->name('fb-settings.update');
+            Route::get('seo-settings', [SeoSettingController::class, 'index'])->name('seo-settings.index');
+            Route::post('seo-settings', [SeoSettingController::class, 'update'])->name('seo-settings.update');
             Route::get('chats', [AdminChatController::class, 'index'])->name('chats.index');
             Route::get('chats/{chat}', [AdminChatController::class, 'show'])->name('chats.show');
             Route::post('chats/{chat}/reply', [AdminChatController::class, 'reply'])->name('chats.reply');

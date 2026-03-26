@@ -116,6 +116,15 @@
                 </a>
             </li>
         </ul>
+        <p class="menu-label">SEO Managment </p>
+        <ul class="menu-list">
+            <li>
+                <a href="{{ route('admin.seo-settings.index') }}" class="has-icon">
+                    <span class="icon"><i class="mdi mdi-tag-multiple-outline"></i></span>
+                    <span class="menu-item-label">SEO Setting</span>
+                </a>
+            </li>
+        </ul>
         <p class="menu-label">About</p>
         <ul class="menu-list">
             <li>
