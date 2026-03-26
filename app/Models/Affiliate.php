@@ -44,4 +44,19 @@ class Affiliate extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function links()
+    {
+        return $this->hasMany(AffiliateLink::class);
+    }
+
+    public function commissions()
+    {
+        return $this->hasMany(AffiliateCommission::class);
+    }
+
+    public function walletTransactions()
+    {
+        return $this->hasMany(AffiliateWalletTransaction::class);
+    }
 }

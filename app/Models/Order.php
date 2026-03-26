@@ -32,6 +32,11 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    public function affiliateCommissions()
+    {
+        return $this->hasMany(AffiliateCommission::class);
+    }
+
     public function stockOutLogs()
     {
         return $this->hasMany(StockOutLog::class);

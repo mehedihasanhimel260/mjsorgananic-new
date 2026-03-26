@@ -26,5 +26,14 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
+    public function commissions()
+    {
+        return $this->hasMany(ProductCommission::class);
+    }
+
+    public function affiliateCommissions()
+    {
+        return $this->hasMany(AffiliateCommission::class);
+    }
 
 }

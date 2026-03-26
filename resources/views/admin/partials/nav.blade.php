@@ -23,11 +23,11 @@
           <span class="icon"><i class="mdi mdi-chevron-down"></i></span>
         </a>
         <div class="navbar-dropdown">
-          <a href="profile.html" class="navbar-item">
+          <a href="{{ route('admin.account.profile') }}" class="navbar-item">
             <span class="icon"><i class="mdi mdi-account"></i></span>
             <span>My Profile</span>
           </a>
-          <a class="navbar-item">
+          <a href="{{ route('admin.account.settings') }}" class="navbar-item">
             <span class="icon"><i class="mdi mdi-settings"></i></span>
             <span>Settings</span>
           </a>

@@ -1,7 +1,10 @@
 <?php
 
 use App\Models\AiSetting;
+use App\Models\Affiliate;
+use App\Models\AffiliateLink;
 use App\Models\FbSetting;
+use App\Models\Product;
 use Illuminate\Support\Facades\Http;
 
 if (! function_exists('gemini_api_response')) {
@@ -172,5 +175,88 @@ if (! function_exists('fb_send_page_message')) {
             'message' => $data['error']['message'] ?? 'ok',
             'raw' => $data,
         ];
+    }
+}
+
+if (! function_exists('affiliate_tracking_cookie_name')) {
+    function affiliate_tracking_cookie_name(): string
+    {
+        return 'mjs_affiliate_tracking';
+    }
+}
+
+if (! function_exists('generate_affiliate_tracking_code')) {
+    function generate_affiliate_tracking_code(): string
+    {
+        do {
+            $code = strtoupper(substr(bin2hex(random_bytes(6)), 0, 10));
+        } while (AffiliateLink::where('tracking_code', $code)->exists());
+
+        return $code;
+    }
+}
+
+if (! function_exists('save_affiliate_attribution')) {
+    function save_affiliate_attribution(\Illuminate\Http\Request $request, AffiliateLink $affiliateLink): void
+    {
+        $payload = [
+            'affiliate_id' => $affiliateLink->affiliate_id,
+            'tracking_code' => $affiliateLink->tracking_code,
+            'product_id' => $affiliateLink->product_id,
+        ];
+
+        $request->session()->put('affiliate_tracking', $payload);
+        cookie()->queue(cookie(
+            affiliate_tracking_cookie_name(),
+            json_encode($payload),
+            60 * 24 * 30,
+            null,
+            null,
+            false,
+            false
+        ));
+    }
+}
+
+if (! function_exists('get_affiliate_attribution')) {
+    function get_affiliate_attribution(?\Illuminate\Http\Request $request = null): ?array
+    {
+        if (! $request) {
+            $request = request();
+        }
+
+        $sessionData = $request->session()->get('affiliate_tracking');
+        if (is_array($sessionData) && ! empty($sessionData['affiliate_id'])) {
+            return $sessionData;
+        }
+
+        $cookieValue = $request->cookie(affiliate_tracking_cookie_name());
+        if (! $cookieValue) {
+            return null;
+        }
+
+        $decoded = json_decode($cookieValue, true);
+        if (! is_array($decoded) || empty($decoded['affiliate_id'])) {
+            return null;
+        }
+
+        $request->session()->put('affiliate_tracking', $decoded);
+
+        return $decoded;
+    }
+}
+
+if (! function_exists('clear_affiliate_attribution')) {
+    function clear_affiliate_attribution(\Illuminate\Http\Request $request): void
+    {
+        $request->session()->forget('affiliate_tracking');
+        cookie()->queue(cookie()->forget(affiliate_tracking_cookie_name()));
+    }
+}
+
+if (! function_exists('get_affiliate_share_url')) {
+    function get_affiliate_share_url(AffiliateLink $affiliateLink): string
+    {
+        return url('/ref/'.$affiliateLink->tracking_code);
     }
 }

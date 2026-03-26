@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\Front_site;
 
 use App\Http\Controllers\Controller;
+use App\Models\Affiliate;
+use App\Models\AffiliateCommission;
+use App\Models\AffiliateWalletTransaction;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\ProductCommission;
 use App\Models\ProductStockBatch;
 use App\Models\StockOutLog;
 use App\Models\User;
@@ -18,6 +22,24 @@ use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
 {
+    private function getAffiliateAttribution(Request $request): ?array
+    {
+        return get_affiliate_attribution($request);
+    }
+
+    private function applyAffiliateToCart($cart, ?array $attribution): void
+    {
+        if (! $cart || ! $attribution || empty($attribution['affiliate_id'])) {
+            return;
+        }
+
+        if (! $cart->affiliate_id) {
+            $cart->update([
+                'affiliate_id' => $attribution['affiliate_id'],
+            ]);
+        }
+    }
+
     private function deductProductStock(int $productId, int $requiredQuantity, int $orderId): void
     {
         $batches = ProductStockBatch::where('product_id', $productId)
@@ -58,6 +80,82 @@ class OrderController extends Controller
         }
     }
 
+    private function calculateCommissionAmount(string $commissionType, float $commissionValue, int $quantity, float $sellPrice): float
+    {
+        if ($commissionType === 'fixed') {
+            return round($commissionValue * $quantity, 2);
+        }
+
+        if ($commissionType === 'percent') {
+            return round((($sellPrice * $quantity) * $commissionValue) / 100, 2);
+        }
+
+        return 0;
+    }
+
+    private function createAffiliateCommissionEntries(Order $order): void
+    {
+        if (! $order->affiliate_id || $order->order_type !== 'affiliate') {
+            return;
+        }
+
+        $affiliate = Affiliate::lockForUpdate()->find($order->affiliate_id);
+
+        if (! $affiliate) {
+            return;
+        }
+
+        $totalCommission = 0;
+
+        $order->loadMissing('items.product');
+
+        foreach ($order->items as $item) {
+            $commissionRule = ProductCommission::where('product_id', $item->product_id)
+                ->where('status', 'active')
+                ->latest('id')
+                ->first();
+
+            if (! $commissionRule) {
+                continue;
+            }
+
+            $commissionAmount = $this->calculateCommissionAmount(
+                $commissionRule->commission_type,
+                (float) $commissionRule->commission_value,
+                (int) $item->quantity,
+                (float) $item->sell_price
+            );
+
+            if ($commissionAmount <= 0) {
+                continue;
+            }
+
+            AffiliateCommission::create([
+                'affiliate_id' => $affiliate->id,
+                'order_id' => $order->id,
+                'product_id' => $item->product_id,
+                'commission_type' => $commissionRule->commission_type,
+                'commission_value' => $commissionRule->commission_value,
+                'commission_amount' => $commissionAmount,
+            ]);
+
+            $totalCommission += $commissionAmount;
+        }
+
+        if ($totalCommission <= 0) {
+            return;
+        }
+
+        AffiliateWalletTransaction::create([
+            'affiliate_id' => $affiliate->id,
+            'type' => 'credit',
+            'amount' => $totalCommission,
+            'description' => 'Commission credited for order '.$order->order_number,
+        ]);
+
+        $affiliate->increment('balance', $totalCommission);
+    }
+
     private function buildVisitorMeta(Request $request): array
     {
         return [
@@ -96,6 +194,8 @@ class OrderController extends Controller
         } elseif ($request->session()->has('user_id')) {
             $cart = Cart::where('user_id', $request->session()->get('user_id'))->where('status', 'pending')->first();
         }
+
+        $this->applyAffiliateToCart($cart, $this->getAffiliateAttribution($request));
 
         return $cart;
     }
@@ -241,6 +341,7 @@ class OrderController extends Controller
             ['user_id' => $user->id, 'status' => 'pending'],
             ['session_id' => session()->getId(), 'cart_type' => 'user']
         );
+        $this->applyAffiliateToCart($cart, $this->getAffiliateAttribution($request));
         session(['cart_id' => $cart->id]);
 
         $product = Product::findOrFail($validated['product_id']);
@@ -352,6 +453,7 @@ class OrderController extends Controller
 
         try {
             $order = DB::transaction(function () use ($request, $validated, $user, $cart) {
+            $affiliateId = $cart->affiliate_id ?: ($this->getAffiliateAttribution($request)['affiliate_id'] ?? null);
             $user->update(array_merge([
                 'name' => $validated['name'],
                 'saved_address' => $validated['address'],
@@ -364,8 +466,8 @@ class OrderController extends Controller
             $order = Order::create([
                 'order_number' => 'ORD-'.now()->format('YmdHis').'-'.str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT),
                 'user_id' => $user->id,
-                'affiliate_id' => $cart->affiliate_id,
-                'order_type' => $cart->affiliate_id ? 'affiliate' : 'direct',
+                'affiliate_id' => $affiliateId,
+                'order_type' => $affiliateId ? 'affiliate' : 'direct',
                 'total_amount' => $totalAmount,
                 'delivery_charge' => $validated['selected_delivery_charge'] ?? 0,
             ]);
@@ -379,6 +481,8 @@ class OrderController extends Controller
 
                 $this->deductProductStock($item->product_id, $item->quantity, $order->id);
             }
+
+            $this->createAffiliateCommissionEntries($order);
 
             $cart->update(['status' => 'converted']);
             $cart->items()->delete();

@@ -8,6 +8,10 @@
                 <span class="icon"><i class="mdi mdi-pencil"></i></span>
                 Edit Product
             </p>
+            <a href="{{ route('admin.product-commissions.create', ['product_id' => $product->id]) }}" class="button green mr-4">
+                <span class="icon"><i class="mdi mdi-cash-plus"></i></span>
+                <span>Set Commission</span>
+            </a>
         </header>
         <div class="card-content">
             <form method="post" action="{{ route('admin.products.update', $product->id) }}" enctype="multipart/form-data">

@@ -42,6 +42,11 @@
                             <span>Products Stock</span>
                         </a>
                     </li>
+                    <li>
+                        <a href="{{ route('admin.product-commissions.index') }}">
+                            <span>Product Commissions</span>
+                        </a>
+                    </li>
 
                 </ul>
             </li>
@@ -50,24 +55,6 @@
                 <a href="{{ route('admin.orders.index') }}">
                     <span class="icon"><i class="mdi mdi-cart-outline"></i></span>
                     <span class="menu-item-label">Orders</span>
-                </a>
-            </li>
-        </ul>
-        <p class="menu-label">Courier</p>
-        <ul class="menu-list">
-            <li>
-                <a href="{{ route('admin.steadfast.index') }}" class="has-icon">
-                    <span class="icon"><i class="mdi mdi-truck-fast-outline"></i></span>
-                    <span class="menu-item-label">Steadfast </span>
-                </a>
-            </li>
-        </ul>
-        <p class="menu-label">Delivery Area</p>
-        <ul class="menu-list">
-            <li>
-                <a href="{{ route('admin.delivery-charge.index') }}" class="has-icon">
-                    <span class="icon"><i class="mdi mdi-map-marker-radius-outline"></i></span>
-                    <span class="menu-item-label">Area</span>
                 </a>
             </li>
         </ul>
@@ -98,31 +85,25 @@
                 </a>
             </li>
         </ul>
-        <p class="menu-label">AI Managment</p>
+        <p class="menu-label">Site Settings</p>
         <ul class="menu-list">
             <li>
-                <a href="{{ route('admin.ai-settings.index') }}" class="has-icon">
-                    <span class="icon"><i class="mdi mdi-robot-outline"></i></span>
-                    <span class="menu-item-label">AI</span>
+                <a class="dropdown">
+                    <span class="icon"><i class="mdi mdi-cog-outline"></i></span>
+                    <span class="menu-item-label">Configuration</span>
+                    <span class="icon"><i class="mdi mdi-plus"></i></span>
                 </a>
-            </li>
-        </ul>
-        <p class="menu-label">FB Managment </p>
-        <ul class="menu-list">
-            <li>
-                <a href="{{ route('admin.fb-settings.index') }}" class="has-icon">
-                    <span class="icon"><i class="mdi mdi-facebook"></i></span>
-                    <span class="menu-item-label">Setting</span>
-                </a>
-            </li>
-        </ul>
-        <p class="menu-label">SEO Managment </p>
-        <ul class="menu-list">
-            <li>
-                <a href="{{ route('admin.seo-settings.index') }}" class="has-icon">
-                    <span class="icon"><i class="mdi mdi-tag-multiple-outline"></i></span>
-                    <span class="menu-item-label">SEO Setting</span>
-                </a>
+                <ul>
+                    <li><a href="{{ route('admin.site-settings.general') }}"><span>General Settings</span></a></li>
+                    <li><a href="{{ route('admin.site-settings.menus') }}"><span>Header / Menu</span></a></li>
+                    <li><a href="{{ route('admin.site-settings.footer') }}"><span>Footer Settings</span></a></li>
+                    <li><a href="{{ route('admin.site-settings.pages.index') }}"><span>Page Settings</span></a></li>
+                    <li><a href="{{ route('admin.seo-settings.index') }}"><span>SEO Settings</span></a></li>
+                    <li><a href="{{ route('admin.fb-settings.index') }}"><span>FB Settings</span></a></li>
+                    <li><a href="{{ route('admin.ai-settings.index') }}"><span>AI Settings</span></a></li>
+                    <li><a href="{{ route('admin.steadfast.index') }}"><span>Courier Settings</span></a></li>
+                    <li><a href="{{ route('admin.delivery-charge.index') }}"><span>Delivery Area</span></a></li>
+                </ul>
             </li>
         </ul>
         <p class="menu-label">About</p>

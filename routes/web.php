@@ -9,6 +9,7 @@ use App\Http\Controllers\ProfileController;
 
 //admin Route link start
 use App\Http\Controllers\Admin\Auth\LoginController;
+use App\Http\Controllers\Admin\AccountController as AdminAccountController;
 use App\Http\Controllers\Admin\AiSettingController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DeliveryChargeController;
@@ -16,14 +17,25 @@ use App\Http\Controllers\Admin\FbSettingController;
 use App\Http\Controllers\Admin\FaqController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ProductCommissionController;
 use App\Http\Controllers\Admin\ProductStockBatchController;
 use App\Http\Controllers\Admin\SeoSettingController;
+use App\Http\Controllers\Admin\SiteMenuController;
+use App\Http\Controllers\Admin\SitePageController as AdminSitePageController;
+use App\Http\Controllers\Admin\SiteSettingController;
 use App\Http\Controllers\Admin\SteadfastController;
 use App\Http\Controllers\Admin\ChatController as AdminChatController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Affiliate\AuthController as AffiliateAuthController;
+use App\Http\Controllers\Affiliate\AccountController as AffiliateAccountController;
+use App\Http\Controllers\Affiliate\DashboardController as AffiliateDashboardController;
+use App\Http\Controllers\Affiliate\LinkController as AffiliateLinkController;
+use App\Http\Controllers\Affiliate\ReportController as AffiliateReportController;
+use App\Http\Controllers\Front_site\AffiliateTrackingController;
 use App\Http\Controllers\Front_site\ChatController as FrontChatController;
 use App\Http\Controllers\Front_site\FrontSiteController;
 use App\Http\Controllers\Front_site\OrderController;
+use App\Http\Controllers\Front_site\SitePageController;
 use App\Http\Controllers\FbWebhookController;
 //admin Route link End
 
@@ -73,10 +85,18 @@ Route::prefix('admin')
 
         Route::middleware('auth:admin')->group(function () {
             Route::get('/dashboard', [LoginController::class, 'dashboard'])->name('dashboard');
-            // Category start
+            Route::get('/account/profile', [AdminAccountController::class, 'profile'])->name('account.profile');
+            Route::patch('/account/profile', [AdminAccountController::class, 'updateProfile'])->name('account.profile.update');
+            Route::get('/account/settings', [AdminAccountController::class, 'settings'])->name('account.settings');
+            Route::patch('/account/settings', [AdminAccountController::class, 'updateSettings'])->name('account.settings.update');
             Route::resource('categories', CategoryController::class);
-            // Product  start
             Route::resource('products', ProductController::class);
+            Route::get('product-commissions', [ProductCommissionController::class, 'index'])->name('product-commissions.index');
+            Route::get('product-commissions/create', [ProductCommissionController::class, 'create'])->name('product-commissions.create');
+            Route::post('product-commissions', [ProductCommissionController::class, 'store'])->name('product-commissions.store');
+            Route::get('product-commissions/{productCommission}/edit', [ProductCommissionController::class, 'edit'])->name('product-commissions.edit');
+            Route::patch('product-commissions/{productCommission}', [ProductCommissionController::class, 'update'])->name('product-commissions.update');
+            Route::post('product-commissions/{productCommission}/toggle-status', [ProductCommissionController::class, 'toggleStatus'])->name('product-commissions.toggle-status');
             Route::get('orders', [AdminOrderController::class, 'index'])->name('orders.index');
             Route::get('orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
             Route::post('orders/{order}/discount', [AdminOrderController::class, 'updateDiscount'])->name('orders.discount.update');
@@ -100,6 +120,19 @@ Route::prefix('admin')
             Route::post('fb-settings', [FbSettingController::class, 'update'])->name('fb-settings.update');
             Route::get('seo-settings', [SeoSettingController::class, 'index'])->name('seo-settings.index');
             Route::post('seo-settings', [SeoSettingController::class, 'update'])->name('seo-settings.update');
+            Route::get('site-settings/general', [SiteSettingController::class, 'index'])->name('site-settings.general');
+            Route::post('site-settings/general', [SiteSettingController::class, 'update'])->name('site-settings.general.update');
+            Route::get('site-settings/footer', [SiteSettingController::class, 'footer'])->name('site-settings.footer');
+            Route::post('site-settings/footer', [SiteSettingController::class, 'updateFooter'])->name('site-settings.footer.update');
+            Route::get('site-settings/menus', [SiteMenuController::class, 'index'])->name('site-settings.menus');
+            Route::post('site-settings/menus', [SiteMenuController::class, 'store'])->name('site-settings.menus.store');
+            Route::get('site-settings/menus/{siteMenu}/edit', [SiteMenuController::class, 'edit'])->name('site-settings.menus.edit');
+            Route::patch('site-settings/menus/{siteMenu}', [SiteMenuController::class, 'update'])->name('site-settings.menus.update');
+            Route::get('site-settings/pages', [AdminSitePageController::class, 'index'])->name('site-settings.pages.index');
+            Route::get('site-settings/pages/create', [AdminSitePageController::class, 'create'])->name('site-settings.pages.create');
+            Route::post('site-settings/pages', [AdminSitePageController::class, 'store'])->name('site-settings.pages.store');
+            Route::get('site-settings/pages/{sitePage}/edit', [AdminSitePageController::class, 'edit'])->name('site-settings.pages.edit');
+            Route::patch('site-settings/pages/{sitePage}', [AdminSitePageController::class, 'update'])->name('site-settings.pages.update');
             Route::get('chats', [AdminChatController::class, 'index'])->name('chats.index');
             Route::get('chats/{chat}', [AdminChatController::class, 'show'])->name('chats.show');
             Route::post('chats/{chat}/reply', [AdminChatController::class, 'reply'])->name('chats.reply');
@@ -108,15 +141,40 @@ Route::prefix('admin')
             Route::post('faqs', [FaqController::class, 'store'])->name('faqs.store');
             Route::get('faqs/{faq}/edit', [FaqController::class, 'edit'])->name('faqs.edit');
             Route::patch('faqs/{faq}', [FaqController::class, 'update'])->name('faqs.update');
-            // Product Stock start
             Route::resource('product-stocks', ProductStockBatchController::class);
-            // Product end
         });
     });
 
-//admin Route End
+Route::prefix('affiliates')
+    ->name('affiliates.')
+    ->group(function () {
+        Route::middleware('guest:affiliate')->group(function () {
+            Route::get('/', [AffiliateAuthController::class, 'showLoginForm'])->name('login');
+            Route::get('/login', [AffiliateAuthController::class, 'showLoginForm'])->name('login.form');
+            Route::post('/login', [AffiliateAuthController::class, 'login'])->name('login.submit');
+            Route::get('/register', [AffiliateAuthController::class, 'showRegisterForm'])->name('register');
+            Route::post('/register', [AffiliateAuthController::class, 'register'])->name('register.submit');
+        });
+
+        Route::middleware('auth:affiliate')->group(function () {
+            Route::get('/dashboard', [AffiliateDashboardController::class, 'index'])->name('dashboard');
+            Route::get('/account/profile', [AffiliateAccountController::class, 'profile'])->name('account.profile');
+            Route::patch('/account/profile', [AffiliateAccountController::class, 'updateProfile'])->name('account.profile.update');
+            Route::get('/account/settings', [AffiliateAccountController::class, 'settings'])->name('account.settings');
+            Route::patch('/account/settings', [AffiliateAccountController::class, 'updateSettings'])->name('account.settings.update');
+            Route::get('/links', [AffiliateLinkController::class, 'index'])->name('links.index');
+            Route::post('/links', [AffiliateLinkController::class, 'store'])->name('links.store');
+            Route::get('/orders', [AffiliateReportController::class, 'orders'])->name('orders.index');
+            Route::get('/commissions', [AffiliateReportController::class, 'commissions'])->name('commissions.index');
+            Route::get('/wallet', [AffiliateReportController::class, 'wallet'])->name('wallet.index');
+            Route::post('/logout', [AffiliateAuthController::class, 'logout'])->name('logout');
+        });
+    });
 
 Route::get('/', [FrontSiteController::class, 'index'])->name('home');
+Route::get('/products/{product}', [FrontSiteController::class, 'show'])->name('products.show');
+Route::get('/pages/{slug}', [SitePageController::class, 'show'])->name('pages.show');
+Route::get('/ref/{tracking_code}', [AffiliateTrackingController::class, 'handle'])->name('affiliate.track');
 Route::get('/facebook/webhook', [FbWebhookController::class, 'verify'])->name('facebook.webhook.verify');
 Route::post('/facebook/webhook', [FbWebhookController::class, 'receive'])->name('facebook.webhook.receive');
 Route::post('/visitor/ping', [OrderController::class, 'visitorPing'])->name('visitor.ping');

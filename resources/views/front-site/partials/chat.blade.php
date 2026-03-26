@@ -1,4 +1,5 @@
 <div
+  id="chat-widget"
   x-data="chatWidget({
     historyUrl: '{{ route('chat.history') }}',
     messageUrl: '{{ route('chat.message') }}',

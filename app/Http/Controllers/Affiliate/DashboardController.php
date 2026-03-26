@@ -1,0 +1,63 @@
+<?php
+
+namespace App\Http\Controllers\Affiliate;
+
+use App\Http\Controllers\Controller;
+use App\Models\AffiliateCommission;
+use App\Models\AffiliateLink;
+use App\Models\AffiliateWalletTransaction;
+use App\Models\Order;
+
+class DashboardController extends Controller
+{
+    public function index()
+    {
+        $affiliate = auth()->guard('affiliate')->user();
+
+        $links = AffiliateLink::with('product')
+            ->where('affiliate_id', $affiliate->id)
+            ->latest()
+            ->take(10)
+            ->get();
+
+        $affiliateOrdersQuery = Order::with(['user', 'items.product'])
+            ->where('affiliate_id', $affiliate->id)
+            ->latest();
+
+        $affiliateOrders = (clone $affiliateOrdersQuery)->count();
+        $recentOrders = (clone $affiliateOrdersQuery)->take(10)->get();
+
+        $commissionsQuery = AffiliateCommission::with(['order', 'product'])
+            ->where('affiliate_id', $affiliate->id)
+            ->latest();
+
+        $recentCommissions = (clone $commissionsQuery)->take(10)->get();
+        $totalCommission = (float) (clone $commissionsQuery)->sum('commission_amount');
+
+        $walletQuery = AffiliateWalletTransaction::where('affiliate_id', $affiliate->id)
+            ->latest();
+
+        $walletTransactions = (clone $walletQuery)->take(10)->get();
+        $totalWalletCredit = (float) (clone $walletQuery)->where('type', 'credit')->sum('amount');
+        $totalWalletDebit = (float) (clone $walletQuery)->where('type', 'debit')->sum('amount');
+
+        $summary = [
+            'total_links' => AffiliateLink::where('affiliate_id', $affiliate->id)->count(),
+            'total_orders' => $affiliateOrders,
+            'total_commission' => $totalCommission,
+            'wallet_credit' => $totalWalletCredit,
+            'wallet_debit' => $totalWalletDebit,
+            'balance' => (float) $affiliate->balance,
+        ];
+
+        return view('affiliates.dashboard.index', compact(
+            'affiliate',
+            'links',
+            'affiliateOrders',
+            'recentOrders',
+            'recentCommissions',
+            'walletTransactions',
+            'summary'
+        ));
+    }
+}

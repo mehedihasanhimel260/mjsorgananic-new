@@ -2,23 +2,30 @@
 
 @section('content')
 <div class="max-w-6xl mx-auto p-4">
-  <div class="flex justify-center mb-6">
-    <a href="{{ route('home') }}" class="inline-flex items-center px-5 py-3 bg-black rounded-xl shadow-lg">
-      <span class="text-white text-2xl font-medium">MJS</span>
-      <span class="text-green-400 text-2xl font-black ml-2">Organic</span>
-    </a>
-  </div>
-
-  <h2 class="text-2xl font-semibold mb-3">Products</h2>
+  @if(!empty($trackedAffiliate))
+    <div class="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-green-700">
+      You are visiting via affiliate: <strong>{{ $trackedAffiliate->name }}</strong>
+    </div>
+  @endif
   <div id="product-list" class="grid md:grid-cols-3 gap-6">
     @foreach ($products as $product)
       <div class="bg-white rounded-xl shadow hover:scale-[1.02] transition">
-        <img src="{{ $product['img'] }}" class="h-56 w-full object-cover rounded-t-xl" alt="{{ $product['name'] }}">
+        <a href="{{ route('products.show', $product['id']) }}">
+          <img src="{{ $product['img'] }}" class="h-56 w-full object-cover rounded-t-xl" alt="{{ $product['name'] }}">
+        </a>
 
         <div class="p-4">
-          <h3 class="font-bold text-lg">{{ $product['name'] }}</h3>
+          <h3 class="font-bold text-lg">
+            <a href="{{ route('products.show', $product['id']) }}" class="hover:text-green-700">
+              {{ $product['name'] }}
+            </a>
+          </h3>
           <p class="text-green-700 font-semibold">Tk <span>{{ $product['price'] }}</span></p>
-          <p class="text-sm text-gray-500 mb-3">{{ $product['desc'] }}</p>
+          <p class="text-sm text-gray-500 mb-3">
+            <a href="{{ route('products.show', $product['id']) }}" class="hover:text-gray-700">
+              {{ $product['desc'] }}
+            </a>
+          </p>
 
           <button
             data-product-id="{{ $product['id'] }}"
@@ -30,6 +37,7 @@
     @endforeach
   </div>
 
+  <div id="cart-section">
   <h2 class="text-2xl font-semibold mt-10 mb-3">Your Cart</h2>
   <div id="cart-empty" class="text-gray-500">Cart is empty</div>
   <div id="cart-items" class="space-y-3"></div>
@@ -77,6 +85,7 @@
       Confirm Order
     </button>
   </form>
+  </div>
 </div>
 
 <div id="orderModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 px-4">

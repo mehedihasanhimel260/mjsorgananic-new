@@ -51,6 +51,9 @@
                         </td>
                         <td class="actions-cell">
                             <div class="buttons right nowrap">
+                                <a href="{{ route('admin.product-commissions.create', ['product_id' => $product->id]) }}" class="button small green" type="button" title="Set Commission">
+                                    <span class="icon"><i class="mdi mdi-cash-plus"></i></span>
+                                </a>
                                 <a href="{{ route('admin.products.edit', $product->id) }}" class="button small blue" type="button">
                                     <span class="icon"><i class="mdi mdi-pencil"></i></span>
                                 </a>

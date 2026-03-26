@@ -1,356 +1,317 @@
 @extends('layouts.admin_main')
 @section('content')
-
-  <section class="section main-section">
-    <div class="grid gap-6 grid-cols-1 md:grid-cols-3 mb-6">
-      <div class="card">
-        <div class="card-content">
-          <div class="flex items-center justify-between">
-            <div class="widget-label">
-              <h3>
-                Clients
-              </h3>
-              <h1>
-                512
-              </h1>
-            </div>
-            <span class="icon widget-icon text-green-500"><i class="mdi mdi-account-multiple mdi-48px"></i></span>
-          </div>
+<section class="section main-section">
+  <div class="card mb-6">
+    <div class="card-content">
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+          <p class="text-sm text-gray-500">Operational overview for the selected date range.</p>
         </div>
-      </div>
-      <div class="card">
-        <div class="card-content">
-          <div class="flex items-center justify-between">
-            <div class="widget-label">
-              <h3>
-                Sales
-              </h3>
-              <h1>
-                $7,770
-              </h1>
-            </div>
-            <span class="icon widget-icon text-blue-500"><i class="mdi mdi-cart-outline mdi-48px"></i></span>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-content">
-          <div class="flex items-center justify-between">
-            <div class="widget-label">
-              <h3>
-                Performance
-              </h3>
-              <h1>
-                256%
-              </h1>
-            </div>
-            <span class="icon widget-icon text-red-500"><i class="mdi mdi-finance mdi-48px"></i></span>
-          </div>
+        <div class="buttons">
+          <a href="{{ route('admin.dashboard', ['range' => 'today']) }}" class="button {{ $range === 'today' ? 'blue' : '' }}">Today</a>
+          <a href="{{ route('admin.dashboard', ['range' => '7d']) }}" class="button {{ $range === '7d' ? 'blue' : '' }}">7 Days</a>
+          <a href="{{ route('admin.dashboard', ['range' => '30d']) }}" class="button {{ $range === '30d' ? 'blue' : '' }}">30 Days</a>
         </div>
       </div>
     </div>
+  </div>
 
+  <div class="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-4 mb-6">
+    <div class="card">
+      <div class="card-content">
+        <div class="flex items-center justify-between">
+          <div class="widget-label">
+            <h3>Total Orders</h3>
+            <h1>{{ $summary['total_orders'] }}</h1>
+          </div>
+          <span class="icon widget-icon text-blue-500"><i class="mdi mdi-cart-outline mdi-48px"></i></span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-content">
+        <div class="flex items-center justify-between">
+          <div class="widget-label">
+            <h3>Total Sales</h3>
+            <h1>{{ number_format($summary['total_sales'], 2) }}</h1>
+          </div>
+          <span class="icon widget-icon text-green-500"><i class="mdi mdi-currency-bdt mdi-48px"></i></span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-content">
+        <div class="flex items-center justify-between">
+          <div class="widget-label">
+            <h3>New Users</h3>
+            <h1>{{ $summary['total_users'] }}</h1>
+          </div>
+          <span class="icon widget-icon text-purple-500"><i class="mdi mdi-account-multiple mdi-48px"></i></span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-content">
+        <div class="flex items-center justify-between">
+          <div class="widget-label">
+            <h3>Pending Chats</h3>
+            <h1>{{ $summary['pending_chats'] }}</h1>
+          </div>
+          <span class="icon widget-icon text-yellow-500"><i class="mdi mdi-chat-processing-outline mdi-48px"></i></span>
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <div class="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 mb-6">
+    <div class="card">
+      <div class="card-content">
+        <div class="flex items-center justify-between">
+          <div class="widget-label">
+            <h3>Low Stock Products</h3>
+            <h1>{{ $summary['low_stock_products'] }}</h1>
+          </div>
+          <span class="icon widget-icon text-red-500"><i class="mdi mdi-alert-outline mdi-48px"></i></span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-content">
+        <div class="flex items-center justify-between">
+          <div class="widget-label">
+            <h3>Affiliate Orders</h3>
+            <h1>{{ $summary['affiliate_orders'] }}</h1>
+          </div>
+          <span class="icon widget-icon text-indigo-500"><i class="mdi mdi-account-star-outline mdi-48px"></i></span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-content">
+        <div class="flex items-center justify-between">
+          <div class="widget-label">
+            <h3>Affiliate Commission</h3>
+            <h1>{{ number_format($summary['affiliate_commission'], 2) }}</h1>
+          </div>
+          <span class="icon widget-icon text-emerald-500"><i class="mdi mdi-cash-multiple mdi-48px"></i></span>
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <div class="grid gap-6 grid-cols-1 xl:grid-cols-2 mb-6">
     <div class="card has-table">
       <header class="card-header">
-        <p class="card-header-title">
-          <span class="icon"><i class="mdi mdi-account-multiple"></i></span>
-          Clients
-        </p>
-        <a href="#" class="card-header-icon">
-          <span class="icon"><i class="mdi mdi-reload"></i></span>
-        </a>
+        <p class="card-header-title"><span class="icon"><i class="mdi mdi-cart-outline"></i></span>Recent Orders</p>
       </header>
       <div class="card-content">
         <table>
           <thead>
-          <tr>
-            <th></th>
-            <th>Name</th>
-            <th>Company</th>
-            <th>City</th>
-            <th>Progress</th>
-            <th>Created</th>
-            <th></th>
-          </tr>
+            <tr>
+              <th>Order No</th>
+              <th>Customer</th>
+              <th>Amount</th>
+              <th>Delivery</th>
+              <th>Status</th>
+              <th>Courier</th>
+            </tr>
           </thead>
           <tbody>
-          <tr>
-            <td class="image-cell">
-              <div class="image">
-                <img src="https://avatars.dicebear.com/v2/initials/rebecca-bauch.svg" class="rounded-full">
-              </div>
-            </td>
-            <td data-label="Name">Rebecca Bauch</td>
-            <td data-label="Company">Daugherty-Daniel</td>
-            <td data-label="City">South Cory</td>
-            <td data-label="Progress" class="progress-cell">
-              <progress max="100" value="79">79</progress>
-            </td>
-            <td data-label="Created">
-              <small class="text-gray-500" title="Oct 25, 2021">Oct 25, 2021</small>
-            </td>
-            <td class="actions-cell">
-              <div class="buttons right nowrap">
-                <button class="button small blue --jb-modal"  data-target="sample-modal-2" type="button">
-                  <span class="icon"><i class="mdi mdi-eye"></i></span>
-                </button>
-                <button class="button small red --jb-modal" data-target="sample-modal" type="button">
-                  <span class="icon"><i class="mdi mdi-trash-can"></i></span>
-                </button>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td class="image-cell">
-              <div class="image">
-                <img src="https://avatars.dicebear.com/v2/initials/felicita-yundt.svg" class="rounded-full">
-              </div>
-            </td>
-            <td data-label="Name">Felicita Yundt</td>
-            <td data-label="Company">Johns-Weissnat</td>
-            <td data-label="City">East Ariel</td>
-            <td data-label="Progress" class="progress-cell">
-              <progress max="100" value="67">67</progress>
-            </td>
-            <td data-label="Created">
-              <small class="text-gray-500" title="Jan 8, 2021">Jan 8, 2021</small>
-            </td>
-            <td class="actions-cell">
-              <div class="buttons right nowrap">
-                <button class="button small blue --jb-modal"  data-target="sample-modal-2" type="button">
-                  <span class="icon"><i class="mdi mdi-eye"></i></span>
-                </button>
-                <button class="button small red --jb-modal" data-target="sample-modal" type="button">
-                  <span class="icon"><i class="mdi mdi-trash-can"></i></span>
-                </button>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td class="image-cell">
-              <div class="image">
-                <img src="https://avatars.dicebear.com/v2/initials/mr-larry-satterfield-v.svg" class="rounded-full">
-              </div>
-            </td>
-            <td data-label="Name">Mr. Larry Satterfield V</td>
-            <td data-label="Company">Hyatt Ltd</td>
-            <td data-label="City">Windlerburgh</td>
-            <td data-label="Progress" class="progress-cell">
-              <progress max="100" value="16">16</progress>
-            </td>
-            <td data-label="Created">
-              <small class="text-gray-500" title="Dec 18, 2021">Dec 18, 2021</small>
-            </td>
-            <td class="actions-cell">
-              <div class="buttons right nowrap">
-                <button class="button small blue --jb-modal"  data-target="sample-modal-2" type="button">
-                  <span class="icon"><i class="mdi mdi-eye"></i></span>
-                </button>
-                <button class="button small red --jb-modal" data-target="sample-modal" type="button">
-                  <span class="icon"><i class="mdi mdi-trash-can"></i></span>
-                </button>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td class="image-cell">
-              <div class="image">
-                <img src="https://avatars.dicebear.com/v2/initials/mr-broderick-kub.svg" class="rounded-full">
-              </div>
-            </td>
-            <td data-label="Name">Mr. Broderick Kub</td>
-            <td data-label="Company">Kshlerin, Bauch and Ernser</td>
-            <td data-label="City">New Kirstenport</td>
-            <td data-label="Progress" class="progress-cell">
-              <progress max="100" value="71">71</progress>
-            </td>
-            <td data-label="Created">
-              <small class="text-gray-500" title="Sep 13, 2021">Sep 13, 2021</small>
-            </td>
-            <td class="actions-cell">
-              <div class="buttons right nowrap">
-                <button class="button small blue --jb-modal"  data-target="sample-modal-2" type="button">
-                  <span class="icon"><i class="mdi mdi-eye"></i></span>
-                </button>
-                <button class="button small red --jb-modal" data-target="sample-modal" type="button">
-                  <span class="icon"><i class="mdi mdi-trash-can"></i></span>
-                </button>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td class="image-cell">
-              <div class="image">
-                <img src="https://avatars.dicebear.com/v2/initials/barry-weber.svg" class="rounded-full">
-              </div>
-            </td>
-            <td data-label="Name">Barry Weber</td>
-            <td data-label="Company">Schulist, Mosciski and Heidenreich</td>
-            <td data-label="City">East Violettestad</td>
-            <td data-label="Progress" class="progress-cell">
-              <progress max="100" value="80">80</progress>
-            </td>
-            <td data-label="Created">
-              <small class="text-gray-500" title="Jul 24, 2021">Jul 24, 2021</small>
-            </td>
-            <td class="actions-cell">
-              <div class="buttons right nowrap">
-                <button class="button small blue --jb-modal"  data-target="sample-modal-2" type="button">
-                  <span class="icon"><i class="mdi mdi-eye"></i></span>
-                </button>
-                <button class="button small red --jb-modal" data-target="sample-modal" type="button">
-                  <span class="icon"><i class="mdi mdi-trash-can"></i></span>
-                </button>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td class="image-cell">
-              <div class="image">
-                <img src="https://avatars.dicebear.com/v2/initials/bert-kautzer-md.svg" class="rounded-full">
-              </div>
-            </td>
-            <td data-label="Name">Bert Kautzer MD</td>
-            <td data-label="Company">Gerhold and Sons</td>
-            <td data-label="City">Mayeport</td>
-            <td data-label="Progress" class="progress-cell">
-              <progress max="100" value="62">62</progress>
-            </td>
-            <td data-label="Created">
-              <small class="text-gray-500" title="Mar 30, 2021">Mar 30, 2021</small>
-            </td>
-            <td class="actions-cell">
-              <div class="buttons right nowrap">
-                <button class="button small blue --jb-modal"  data-target="sample-modal-2" type="button">
-                  <span class="icon"><i class="mdi mdi-eye"></i></span>
-                </button>
-                <button class="button small red --jb-modal" data-target="sample-modal" type="button">
-                  <span class="icon"><i class="mdi mdi-trash-can"></i></span>
-                </button>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td class="image-cell">
-              <div class="image">
-                <img src="https://avatars.dicebear.com/v2/initials/lonzo-steuber.svg" class="rounded-full">
-              </div>
-            </td>
-            <td data-label="Name">Lonzo Steuber</td>
-            <td data-label="Company">Skiles Ltd</td>
-            <td data-label="City">Marilouville</td>
-            <td data-label="Progress" class="progress-cell">
-              <progress max="100" value="17">17</progress>
-            </td>
-            <td data-label="Created">
-              <small class="text-gray-500" title="Feb 12, 2021">Feb 12, 2021</small>
-            </td>
-            <td class="actions-cell">
-              <div class="buttons right nowrap">
-                <button class="button small blue --jb-modal"  data-target="sample-modal-2" type="button">
-                  <span class="icon"><i class="mdi mdi-eye"></i></span>
-                </button>
-                <button class="button small red --jb-modal" data-target="sample-modal" type="button">
-                  <span class="icon"><i class="mdi mdi-trash-can"></i></span>
-                </button>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td class="image-cell">
-              <div class="image">
-                <img src="https://avatars.dicebear.com/v2/initials/jonathon-hahn.svg" class="rounded-full">
-              </div>
-            </td>
-            <td data-label="Name">Jonathon Hahn</td>
-            <td data-label="Company">Flatley Ltd</td>
-            <td data-label="City">Billiemouth</td>
-            <td data-label="Progress" class="progress-cell">
-              <progress max="100" value="74">74</progress>
-            </td>
-            <td data-label="Created">
-              <small class="text-gray-500" title="Dec 30, 2021">Dec 30, 2021</small>
-            </td>
-            <td class="actions-cell">
-              <div class="buttons right nowrap">
-                <button class="button small blue --jb-modal"  data-target="sample-modal-2" type="button">
-                  <span class="icon"><i class="mdi mdi-eye"></i></span>
-                </button>
-                <button class="button small red --jb-modal" data-target="sample-modal" type="button">
-                  <span class="icon"><i class="mdi mdi-trash-can"></i></span>
-                </button>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td class="image-cell">
-              <div class="image">
-                <img src="https://avatars.dicebear.com/v2/initials/ryley-wuckert.svg" class="rounded-full">
-              </div>
-            </td>
-            <td data-label="Name">Ryley Wuckert</td>
-            <td data-label="Company">Heller-Little</td>
-            <td data-label="City">Emeraldtown</td>
-            <td data-label="Progress" class="progress-cell">
-              <progress max="100" value="54">54</progress>
-            </td>
-            <td data-label="Created">
-              <small class="text-gray-500" title="Jun 28, 2021">Jun 28, 2021</small>
-            </td>
-            <td class="actions-cell">
-              <div class="buttons right nowrap">
-                <button class="button small blue --jb-modal"  data-target="sample-modal-2" type="button">
-                  <span class="icon"><i class="mdi mdi-eye"></i></span>
-                </button>
-                <button class="button small red --jb-modal" data-target="sample-modal" type="button">
-                  <span class="icon"><i class="mdi mdi-trash-can"></i></span>
-                </button>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td class="image-cell">
-              <div class="image">
-                <img src="https://avatars.dicebear.com/v2/initials/sienna-hayes.svg" class="rounded-full">
-              </div>
-            </td>
-            <td data-label="Name">Sienna Hayes</td>
-            <td data-label="Company">Conn, Jerde and Douglas</td>
-            <td data-label="City">Jonathanfort</td>
-            <td data-label="Progress" class="progress-cell">
-              <progress max="100" value="55">55</progress>
-            </td>
-            <td data-label="Created">
-              <small class="text-gray-500" title="Mar 7, 2021">Mar 7, 2021</small>
-            </td>
-            <td class="actions-cell">
-              <div class="buttons right nowrap">
-                <button class="button small blue --jb-modal"  data-target="sample-modal-2" type="button">
-                  <span class="icon"><i class="mdi mdi-eye"></i></span>
-                </button>
-                <button class="button small red --jb-modal" data-target="sample-modal" type="button">
-                  <span class="icon"><i class="mdi mdi-trash-can"></i></span>
-                </button>
-              </div>
-            </td>
-          </tr>
+            @forelse ($recentOrders as $order)
+            <tr>
+              <td><a href="{{ route('admin.orders.show', $order->id) }}" class="text-blue-600 hover:underline">{{ $order->order_number }}</a></td>
+              <td>{{ $order->user?->name ?? 'N/A' }}</td>
+              <td>{{ number_format((float) $order->total_amount, 2) }}</td>
+              <td>{{ number_format((float) ($order->delivery_charge ?? 0), 2) }}</td>
+              <td>{{ $order->order_status ?? 'pending' }}</td>
+              <td>{{ $order->track_id ? 'Booked' : 'Unbooked' }}</td>
+            </tr>
+            @empty
+            <tr><td colspan="6" class="has-text-centered">No recent orders found.</td></tr>
+            @endforelse
           </tbody>
         </table>
-        <div class="table-pagination">
-          <div class="flex items-center justify-between">
-            <div class="buttons">
-              <button type="button" class="button active">1</button>
-              <button type="button" class="button">2</button>
-              <button type="button" class="button">3</button>
-            </div>
-            <small>Page 1 of 3</small>
-          </div>
-        </div>
       </div>
     </div>
-  </section>
 
+    <div class="card has-table">
+      <header class="card-header">
+        <p class="card-header-title"><span class="icon"><i class="mdi mdi-chat-processing-outline"></i></span>Recent Chats</p>
+      </header>
+      <div class="card-content">
+        <table>
+          <thead>
+            <tr>
+              <th>Ticket</th>
+              <th>User</th>
+              <th>Latest Message</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @forelse ($recentChats as $chat)
+            <tr>
+              <td>{{ $chat->ticket_number }}</td>
+              <td>{{ $chat->user?->name ?? 'Guest' }}</td>
+              <td>{{ \Illuminate\Support\Str::limit($chat->latestConversion?->convertion_message ?? 'No message', 45) }}</td>
+              <td>{{ $chat->status }}</td>
+              <td><a href="{{ route('admin.chats.show', $chat->id) }}" class="button small blue">View</a></td>
+            </tr>
+            @empty
+            <tr><td colspan="5" class="has-text-centered">No recent chat found.</td></tr>
+            @endforelse
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid gap-6 grid-cols-1 xl:grid-cols-2 mb-6">
+    <div class="card has-table">
+      <header class="card-header">
+        <p class="card-header-title"><span class="icon"><i class="mdi mdi-alert-outline"></i></span>Low Stock Alerts</p>
+      </header>
+      <div class="card-content">
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>SKU</th>
+              <th>Stock</th>
+              <th>Alert</th>
+            </tr>
+          </thead>
+          <tbody>
+            @forelse ($stockAlerts as $product)
+            <tr>
+              <td><a href="{{ route('admin.products.edit', $product->id) }}" class="text-blue-600 hover:underline">{{ $product->name }}</a></td>
+              <td>{{ $product->sku }}</td>
+              <td>{{ (int) $product->stock_qty }}</td>
+              <td>{{ (int) $product->stock_qty === 0 ? 'Out of stock' : 'Low stock' }}</td>
+            </tr>
+            @empty
+            <tr><td colspan="4" class="has-text-centered">No stock alert found.</td></tr>
+            @endforelse
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card has-table">
+      <header class="card-header">
+        <p class="card-header-title"><span class="icon"><i class="mdi mdi-cash-multiple"></i></span>Affiliate Activity</p>
+      </header>
+      <div class="card-content">
+        <table>
+          <thead>
+            <tr>
+              <th>Affiliate</th>
+              <th>Order</th>
+              <th>Product</th>
+              <th>Commission</th>
+            </tr>
+          </thead>
+          <tbody>
+            @forelse ($affiliateActivities as $activity)
+            <tr>
+              <td>{{ $activity->affiliate?->name ?? 'N/A' }}</td>
+              <td>
+                @if($activity->order)
+                  <a href="{{ route('admin.orders.show', $activity->order->id) }}" class="text-blue-600 hover:underline">{{ $activity->order->order_number }}</a>
+                @else
+                  N/A
+                @endif
+              </td>
+              <td>{{ $activity->product?->name ?? 'N/A' }}</td>
+              <td>{{ number_format((float) $activity->commission_amount, 2) }}</td>
+            </tr>
+            @empty
+            <tr><td colspan="4" class="has-text-centered">No affiliate activity found.</td></tr>
+            @endforelse
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid gap-6 grid-cols-1 xl:grid-cols-3 mb-6">
+    <div class="card has-table">
+      <header class="card-header">
+        <p class="card-header-title"><span class="icon"><i class="mdi mdi-truck-fast-outline"></i></span>Courier Snapshot</p>
+      </header>
+      <div class="card-content">
+        <table>
+          <tbody>
+            <tr><td>Booked Orders</td><td>{{ $courierSnapshot['booked'] }}</td></tr>
+            <tr><td>Unbooked Orders</td><td>{{ $courierSnapshot['unbooked'] }}</td></tr>
+            <tr><td>In Review</td><td>{{ $courierSnapshot['in_review'] }}</td></tr>
+            <tr><td>Delivered</td><td>{{ $courierSnapshot['delivered'] }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card has-table">
+      <header class="card-header">
+        <p class="card-header-title"><span class="icon"><i class="mdi mdi-chart-pie"></i></span>Order Source</p>
+      </header>
+      <div class="card-content">
+        <table>
+          <tbody>
+            <tr><td>Direct Orders</td><td>{{ $sourceOverview['direct_orders'] }}</td></tr>
+            <tr><td>Affiliate Orders</td><td>{{ $sourceOverview['affiliate_orders'] }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card has-table">
+      <header class="card-header">
+        <p class="card-header-title"><span class="icon"><i class="mdi mdi-map-marker-outline"></i></span>Delivery Overview</p>
+      </header>
+      <div class="card-content">
+        <table>
+          <tbody>
+            <tr><td>Inside Dhaka ({{ number_format($deliveryOverview['inside_charge'], 2) }})</td><td>{{ $deliveryOverview['inside_count'] }}</td></tr>
+            <tr><td>Outside Dhaka ({{ number_format($deliveryOverview['outside_charge'], 2) }})</td><td>{{ $deliveryOverview['outside_count'] }}</td></tr>
+            <tr><td>Custom Charge ({{ number_format($deliveryOverview['custom_charge'], 2) }})</td><td>{{ $deliveryOverview['custom_count'] }}</td></tr>
+            <tr><td>Free Delivery</td><td>{{ $deliveryOverview['free_count'] }}</td></tr>
+            <tr><td>Total Delivery Amount</td><td>{{ number_format($deliveryOverview['delivery_amount'], 2) }}</td></tr>
+            <tr><td>Wallet Credit</td><td>{{ number_format($deliveryOverview['wallet_credit'], 2) }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card has-table">
+    <header class="card-header">
+      <p class="card-header-title"><span class="icon"><i class="mdi mdi-star-outline"></i></span>Top Selling Products</p>
+    </header>
+    <div class="card-content">
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Quantity Sold</th>
+            <th>Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          @forelse ($topProducts as $product)
+          <tr>
+            <td>{{ $product->name }}</td>
+            <td>{{ (int) $product->total_qty }}</td>
+            <td>{{ number_format((float) $product->total_revenue, 2) }}</td>
+          </tr>
+          @empty
+          <tr><td colspan="3" class="has-text-centered">No product sales data found.</td></tr>
+          @endforelse
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
 @endsection
