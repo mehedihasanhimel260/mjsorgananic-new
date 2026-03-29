@@ -25,10 +25,19 @@
                     </div>
                 </div>
                 <div class="field">
-                    <label class="label">Keyword</label>
-                    <div class="control">
-                        <input class="input" type="text" name="keyword" value="{{ old('keyword') }}">
+                    <label class="label">Keywords</label>
+                    <div id="keyword-wrapper" class="space-y-3">
+                        @php
+                            $keywords = old('keyword', ['']);
+                        @endphp
+                        @foreach ($keywords as $keyword)
+                        <div class="flex gap-2 keyword-row">
+                            <input class="input" type="text" name="keyword[]" value="{{ $keyword }}" placeholder="Enter keyword">
+                            <button type="button" class="button red remove-keyword">Remove</button>
+                        </div>
+                        @endforeach
                     </div>
+                    <button type="button" id="add-keyword" class="button blue mt-3">Add Keyword</button>
                 </div>
                 <hr>
                 <div class="field grouped">
@@ -44,3 +53,32 @@
     </div>
 </section>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const wrapper = document.getElementById('keyword-wrapper');
+    const addButton = document.getElementById('add-keyword');
+
+    addButton.addEventListener('click', function () {
+        const row = document.createElement('div');
+        row.className = 'flex gap-2 keyword-row';
+        row.innerHTML = '<input class="input" type="text" name="keyword[]" placeholder="Enter keyword"><button type="button" class="button red remove-keyword">Remove</button>';
+        wrapper.appendChild(row);
+    });
+
+    wrapper.addEventListener('click', function (event) {
+        if (!event.target.classList.contains('remove-keyword')) {
+            return;
+        }
+
+        if (wrapper.querySelectorAll('.keyword-row').length === 1) {
+            wrapper.querySelector('input').value = '';
+            return;
+        }
+
+        event.target.closest('.keyword-row').remove();
+    });
+});
+</script>
+@endpush

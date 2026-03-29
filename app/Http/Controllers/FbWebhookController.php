@@ -12,6 +12,39 @@ use Illuminate\Support\Facades\Log;
 
 class FbWebhookController extends Controller
 {
+    private function normalizeMessageForKeywordMatch(string $message): string
+    {
+        $normalized = preg_replace('/[^\p{L}\p{N}\s]+/u', ' ', mb_strtolower($message));
+
+        return trim(preg_replace('/\s+/', ' ', $normalized ?? ''));
+    }
+
+    private function findFaqAnswerByKeyword(string $message): ?string
+    {
+        $normalizedMessage = $this->normalizeMessageForKeywordMatch($message);
+
+        if ($normalizedMessage === '') {
+            return null;
+        }
+
+        $faqs = Faq::query()
+            ->select('question', 'answer', 'keyword')
+            ->latest()
+            ->get();
+
+        foreach ($faqs as $faq) {
+            foreach ($faq->keyword_list as $keyword) {
+                $normalizedKeyword = $this->normalizeMessageForKeywordMatch($keyword);
+
+                if ($normalizedKeyword !== '' && str_contains($normalizedMessage, $normalizedKeyword)) {
+                    return $faq->answer;
+                }
+            }
+        }
+
+        return null;
+    }
+
     private function buildFaqContext(): string
     {
         $faqs = Faq::query()
@@ -27,7 +60,7 @@ class FbWebhookController extends Controller
         return $faqs->map(function (Faq $faq, int $index) {
             return ($index + 1).'. Question: '.$faq->question
                 .' | Answer: '.$faq->answer
-                .' | Keyword: '.($faq->keyword ?: 'N/A');
+                .' | Keyword: '.($faq->keyword_list ? implode(', ', $faq->keyword_list) : 'N/A');
         })->implode("\n");
     }
 
@@ -123,11 +156,17 @@ PROMPT;
                         ]
                     );
 
-                    $aiPrompt = $this->buildAiPrompt($user, $messageText);
-                    $aiResponse = active_ai_response($aiPrompt);
-                    $replyText = $aiResponse['success']
-                        ? $aiResponse['message']
-                        : 'দুঃখিত, এই বিষয়ে এই মুহূর্তে সঠিক তথ্য দিতে পারছি না। অনুগ্রহ করে আমাদের WhatsApp নম্বর 01309003117 এ যোগাযোগ করুন।';
+                    $directFaqAnswer = $this->findFaqAnswerByKeyword($messageText);
+
+                    if ($directFaqAnswer) {
+                        $replyText = $directFaqAnswer;
+                    } else {
+                        $aiPrompt = $this->buildAiPrompt($user, $messageText);
+                        $aiResponse = active_ai_response($aiPrompt);
+                        $replyText = $aiResponse['success']
+                            ? $aiResponse['message']
+                            : 'দুঃখিত, এই বিষয়ে এই মুহূর্তে সঠিক তথ্য দিতে পারছি না। অনুগ্রহ করে আমাদের WhatsApp নম্বর 01309003117 এ যোগাযোগ করুন।';
+                    }
 
                     fb_send_page_message($senderPsid, $replyText);
                 } catch (\Throwable $exception) {
@@ -142,4 +181,3 @@ PROMPT;
         return response()->json(['status' => 'EVENT_RECEIVED']);
     }
 }
-

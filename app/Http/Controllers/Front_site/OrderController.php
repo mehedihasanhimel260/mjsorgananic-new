@@ -22,6 +22,25 @@ use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
 {
+    private function normalizeBangladeshPhone(string $phone): ?string
+    {
+        $digits = preg_replace('/\D+/', '', $phone ?? '');
+
+        if (! $digits) {
+            return null;
+        }
+
+        if (strlen($digits) >= 11) {
+            $digits = substr($digits, -11);
+        }
+
+        if (strlen($digits) !== 11 || ! str_starts_with($digits, '01')) {
+            return null;
+        }
+
+        return $digits;
+    }
+
     private function getAffiliateAttribution(Request $request): ?array
     {
         return get_affiliate_attribution($request);
@@ -272,8 +291,16 @@ class OrderController extends Controller
         $sessionMeta = $request->session()->get('visitor_meta', []);
         $visitorMeta = array_merge($sessionMeta, $this->buildVisitorMeta($request));
         $locationData = $this->buildLocationData($validated);
+        $normalizedPhone = $this->normalizeBangladeshPhone($validated['phone']);
 
-        $user = User::where('phone', $validated['phone'])->first();
+        if (! $normalizedPhone) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please enter a valid 11 digit phone number.',
+            ], 422);
+        }
+
+        $user = User::where('phone', $normalizedPhone)->first();
 
         if ($user) {
             $user->update(array_merge([
@@ -282,7 +309,7 @@ class OrderController extends Controller
         } else {
             $user = User::create(array_merge([
                 'name' => $validated['name'],
-                'phone' => $validated['phone'],
+                'phone' => $normalizedPhone,
                 'password' => Hash::make('visitor-'.uniqid()),
             ], $visitorMeta, $locationData));
         }
@@ -318,8 +345,14 @@ class OrderController extends Controller
 
         $user = null;
         if ($request->has('phone')) {
+            $normalizedPhone = $this->normalizeBangladeshPhone($validated['phone']);
+
+            if (! $normalizedPhone) {
+                return response()->json(['success' => false, 'message' => 'Please enter a valid 11 digit phone number.'], 422);
+            }
+
             $user = User::updateOrCreate(
-                ['phone' => $validated['phone']],
+                ['phone' => $normalizedPhone],
                 array_merge([
                     'name' => $validated['name'],
                 ], $request->session()->get('visitor_meta', []), $this->buildVisitorMeta($request))
@@ -419,7 +452,20 @@ class OrderController extends Controller
             'selected_delivery_charge' => 'nullable|numeric|min:0',
         ]);
 
-        $user = User::where('phone', $validated['phone'])->first();
+        $normalizedPhone = $this->normalizeBangladeshPhone($validated['phone']);
+
+        if (! $normalizedPhone) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please enter a valid 11 digit phone number.',
+                ], 422);
+            }
+
+            return redirect()->back()->with('error', 'Please enter a valid 11 digit phone number.');
+        }
+
+        $user = User::where('phone', $normalizedPhone)->first();
 
         if (! $user && $request->session()->has('user_id')) {
             $user = User::find($request->session()->get('user_id'));

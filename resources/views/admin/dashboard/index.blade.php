@@ -114,7 +114,7 @@
               <th>Amount</th>
               <th>Delivery</th>
               <th>Status</th>
-              <th>Courier</th>
+              <th>Track ID</th>
             </tr>
           </thead>
           <tbody>
@@ -125,7 +125,15 @@
               <td>{{ number_format((float) $order->total_amount, 2) }}</td>
               <td>{{ number_format((float) ($order->delivery_charge ?? 0), 2) }}</td>
               <td>{{ $order->order_status ?? 'pending' }}</td>
-              <td>{{ $order->track_id ? 'Booked' : 'Unbooked' }}</td>
+              <td>
+                @if($order->track_id)
+                  <a href="https://steadfast.com.bd/t/{{ $order->track_id }}" target="_blank" class="text-blue-600 hover:underline">
+                    {{ $order->track_id }}
+                  </a>
+                @else
+                  N/A
+                @endif
+              </td>
             </tr>
             @empty
             <tr><td colspan="6" class="has-text-centered">No recent orders found.</td></tr>

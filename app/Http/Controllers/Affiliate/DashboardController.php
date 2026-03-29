@@ -8,6 +8,7 @@ use App\Models\AffiliateLink;
 use App\Models\AffiliateWithdrawRequest;
 use App\Models\AffiliateWalletTransaction;
 use App\Models\Order;
+use App\Models\ProductCommission;
 
 class DashboardController extends Controller
 {
@@ -34,6 +35,14 @@ class DashboardController extends Controller
 
         $recentCommissions = (clone $commissionsQuery)->take(10)->get();
         $totalCommission = (float) (clone $commissionsQuery)->sum('commission_amount');
+        $commissionProducts = ProductCommission::with('product')
+            ->where('status', 'active')
+            ->whereHas('product', function ($query) {
+                $query->where('status', 'active');
+            })
+            ->latest()
+            ->take(20)
+            ->get();
 
         $walletQuery = AffiliateWalletTransaction::where('affiliate_id', $affiliate->id)
             ->latest();
@@ -70,6 +79,7 @@ class DashboardController extends Controller
             'affiliateOrders',
             'recentOrders',
             'recentCommissions',
+            'commissionProducts',
             'walletTransactions',
             'withdrawRequests',
             'summary'

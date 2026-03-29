@@ -15,6 +15,58 @@ use Illuminate\Support\Facades\Log;
 
 class ChatController extends Controller
 {
+    private function normalizeMessageForKeywordMatch(string $message): string
+    {
+        $normalized = preg_replace('/[^\p{L}\p{N}\s]+/u', ' ', mb_strtolower($message));
+
+        return trim(preg_replace('/\s+/', ' ', $normalized ?? ''));
+    }
+
+    private function findFaqAnswerByKeyword(string $message): ?string
+    {
+        $normalizedMessage = $this->normalizeMessageForKeywordMatch($message);
+
+        if ($normalizedMessage === '') {
+            return null;
+        }
+
+        $faqs = Faq::query()
+            ->select('question', 'answer', 'keyword')
+            ->latest()
+            ->get();
+
+        foreach ($faqs as $faq) {
+            foreach ($faq->keyword_list as $keyword) {
+                $normalizedKeyword = $this->normalizeMessageForKeywordMatch($keyword);
+
+                if ($normalizedKeyword !== '' && str_contains($normalizedMessage, $normalizedKeyword)) {
+                    return $faq->answer;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeBangladeshPhone(string $phone): ?string
+    {
+        $digits = preg_replace('/\D+/', '', $phone ?? '');
+
+        if (! $digits) {
+            return null;
+        }
+
+        if (strlen($digits) >= 11) {
+            $digits = substr($digits, -11);
+        }
+
+        if (strlen($digits) !== 11 || ! str_starts_with($digits, '01')) {
+            return null;
+        }
+
+        return $digits;
+    }
+
     private function buildFaqContext(): string
     {
         $faqs = Faq::query()
@@ -30,7 +82,7 @@ class ChatController extends Controller
         return $faqs->map(function (Faq $faq, int $index) {
             return ($index + 1).'. Question: '.$faq->question
                 .' | Answer: '.$faq->answer
-                .' | Keyword: '.($faq->keyword ?: 'N/A');
+                .' | Keyword: '.($faq->keyword_list ? implode(', ', $faq->keyword_list) : 'N/A');
         })->implode("\n");
     }
 
@@ -193,7 +245,13 @@ PROMPT;
 
         try {
             $payload = DB::transaction(function () use ($request, $validated) {
-                $user = User::where('phone', $validated['phone'])->first();
+                $normalizedPhone = $this->normalizeBangladeshPhone($validated['phone']);
+
+                if (! $normalizedPhone) {
+                    throw new \InvalidArgumentException('Please enter a valid 11 digit phone number.');
+                }
+
+                $user = User::where('phone', $normalizedPhone)->first();
 
                 if ($user) {
                     $user->update([
@@ -206,7 +264,7 @@ PROMPT;
                 } else {
                     $user = User::create([
                         'name' => $validated['name'],
-                        'phone' => $validated['phone'],
+                        'phone' => $normalizedPhone,
                         'password' => Hash::make('chat-user-'.uniqid()),
                         'ip_address' => $request->ip(),
                         'last_user_agent' => substr((string) $request->userAgent(), 0, 65535),
@@ -223,15 +281,21 @@ PROMPT;
                     'convertion_message' => $validated['message'],
                 ]);
 
-                $aiPrompt = $this->buildAiPrompt($user, $validated['message']);
-                $aiResponse = active_ai_response($aiPrompt);
+                $directFaqAnswer = $this->findFaqAnswerByKeyword($validated['message']);
+                $replyMessage = $directFaqAnswer;
+
+                if (! $replyMessage) {
+                    $aiPrompt = $this->buildAiPrompt($user, $validated['message']);
+                    $aiResponse = active_ai_response($aiPrompt);
+                    $replyMessage = $aiResponse['success']
+                        ? $aiResponse['message']
+                        : 'AI assistant is currently unavailable. Please wait for a support reply.';
+                }
 
                 $chat->conversions()->create([
                     'user_id' => $user->id,
                     'sender_type' => 'ai',
-                    'convertion_message' => $aiResponse['success']
-                        ? $aiResponse['message']
-                        : 'AI assistant is currently unavailable. Please wait for a support reply.',
+                    'convertion_message' => $replyMessage,
                 ]);
 
                 $chat->update([
@@ -261,8 +325,8 @@ PROMPT;
 
             return response()->json([
                 'success' => false,
-                'message' => 'Chat message save failed.',
-            ], 500);
+                'message' => $exception instanceof \InvalidArgumentException ? $exception->getMessage() : 'Chat message save failed.',
+            ], $exception instanceof \InvalidArgumentException ? 422 : 500);
         }
     }
 }

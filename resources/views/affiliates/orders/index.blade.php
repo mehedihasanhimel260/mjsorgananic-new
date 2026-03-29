@@ -15,6 +15,8 @@
                     <tr>
                         <th>Order No</th>
                         <th>Customer</th>
+                        <th>Phone</th>
+                        <th>Track ID</th>
                         <th>Products</th>
                         <th>Total</th>
                         <th>Delivery</th>
@@ -26,6 +28,16 @@
                     <tr>
                         <td>{{ $order->order_number }}</td>
                         <td>{{ $order->user?->name ?? 'N/A' }}</td>
+                        <td>{{ $order->user?->phone ?? 'N/A' }}</td>
+                        <td>
+                            @if($order->track_id)
+                                <a href="https://steadfast.com.bd/t/{{ $order->track_id }}" target="_blank" class="text-blue-600 hover:underline">
+                                    {{ $order->track_id }}
+                                </a>
+                            @else
+                                N/A
+                            @endif
+                        </td>
                         <td>
                             @foreach ($order->items as $item)
                                 {{ $item->product?->name ?? 'Product' }} ({{ $item->quantity }})@if (! $loop->last), @endif
@@ -37,7 +49,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="has-text-centered">No affiliate order found.</td>
+                        <td colspan="8" class="has-text-centered">No affiliate order found.</td>
                     </tr>
                     @endforelse
                 </tbody>

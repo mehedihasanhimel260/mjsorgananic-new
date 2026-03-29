@@ -24,7 +24,7 @@
                 </summary>
                 <div class="px-4 pb-4">
                     <p class="mb-2 text-gray-700">{{ $faq->answer }}</p>
-                    <p class="text-sm text-gray-500"><strong>Keyword:</strong> {{ $faq->keyword ?? 'N/A' }}</p>
+                    <p class="text-sm text-gray-500"><strong>Keyword:</strong> {{ $faq->keyword_list ? implode(', ', $faq->keyword_list) : 'N/A' }}</p>
                 </div>
             </details>
             @empty

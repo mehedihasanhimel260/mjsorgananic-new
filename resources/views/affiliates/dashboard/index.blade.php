@@ -160,6 +160,49 @@
         </div>
     </div>
 
+    <div class="card has-table mt-6">
+        <header class="card-header">
+            <p class="card-header-title">
+                <span class="icon"><i class="mdi mdi-package-variant-closed"></i></span>
+                Product List
+            </p>
+        </header>
+        <div class="card-content">
+            <table>
+                <thead>
+                    <tr>
+                        <th>SI</th>
+                        <th>Product Name</th>
+                        <th>Price</th>
+                        <th>Commission Type</th>
+                        <th>Commission Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($commissionProducts as $commissionProduct)
+                    <tr>
+                        <td>{{ $loop->iteration }}</td>
+                        <td>{{ $commissionProduct->product?->name ?? 'N/A' }}</td>
+                        <td>{{ number_format((float) ($commissionProduct->product?->selling_price ?? 0), 2) }}</td>
+                        <td>{{ ucfirst($commissionProduct->commission_type) }}</td>
+                        <td>
+                            @if ($commissionProduct->commission_type === 'fixed')
+                                Tk {{ number_format((float) $commissionProduct->commission_value, 2) }}
+                            @else
+                                {{ number_format((float) $commissionProduct->commission_value, 2) }}%
+                            @endif
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="5" class="has-text-centered">No commission-enabled product found.</td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <div id="affiliate-orders" class="card has-table mt-6">
         <header class="card-header">
             <p class="card-header-title">
@@ -173,6 +216,8 @@
                     <tr>
                         <th>Order No</th>
                         <th>Customer</th>
+                        <th>Phone</th>
+                        <th>Track ID</th>
                         <th>Products</th>
                         <th>Total</th>
                         <th>Created</th>
@@ -183,6 +228,16 @@
                     <tr>
                         <td>{{ $order->order_number }}</td>
                         <td>{{ $order->user?->name ?? 'N/A' }}</td>
+                        <td>{{ $order->user?->phone ?? 'N/A' }}</td>
+                        <td>
+                            @if($order->track_id)
+                                <a href="https://steadfast.com.bd/t/{{ $order->track_id }}" target="_blank" class="text-blue-600 hover:underline">
+                                    {{ $order->track_id }}
+                                </a>
+                            @else
+                                N/A
+                            @endif
+                        </td>
                         <td>
                             @foreach ($order->items as $item)
                                 {{ $item->product?->name ?? 'Product' }} ({{ $item->quantity }})@if (! $loop->last), @endif
@@ -193,7 +248,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="has-text-centered">No affiliate order yet.</td>
+                        <td colspan="7" class="has-text-centered">No affiliate order yet.</td>
                     </tr>
                     @endforelse
                 </tbody>
