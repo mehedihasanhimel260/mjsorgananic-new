@@ -37,6 +37,14 @@
                         <label class="label">Footer Quick Links Title</label>
                         <input class="input" type="text" name="footer_quick_links_title" value="{{ old('footer_quick_links_title', $setting->footer_quick_links_title) }}">
                     </div>
+                    <div class="field">
+                        <label class="label">Affiliate Minimum Withdraw Amount</label>
+                        <input class="input" type="number" step="0.01" min="0" name="affiliate_minimum_withdraw_amount" value="{{ old('affiliate_minimum_withdraw_amount', $setting->affiliate_minimum_withdraw_amount ?? 500) }}">
+                    </div>
+                    <div class="field">
+                        <label class="label">Affiliate Minimum Order Amount</label>
+                        <input class="input" type="number" step="0.01" min="0" name="affiliate_minimum_order_amount" value="{{ old('affiliate_minimum_order_amount', $setting->affiliate_minimum_order_amount ?? 0) }}">
+                    </div>
                     <div class="field md:col-span-2">
                         <label class="label">Default Address</label>
                         <textarea class="textarea" name="default_address" rows="3">{{ old('default_address', $setting->default_address) }}</textarea>

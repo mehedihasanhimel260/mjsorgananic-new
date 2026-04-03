@@ -9,12 +9,14 @@ use App\Models\AffiliateWithdrawRequest;
 use App\Models\AffiliateWalletTransaction;
 use App\Models\Order;
 use App\Models\ProductCommission;
+use App\Models\SiteSetting;
 
 class DashboardController extends Controller
 {
     public function index()
     {
         $affiliate = auth()->guard('affiliate')->user();
+        $minimumWithdrawAmount = (float) (SiteSetting::query()->value('affiliate_minimum_withdraw_amount') ?? 500);
 
         $links = AffiliateLink::with('product')
             ->where('affiliate_id', $affiliate->id)
@@ -70,7 +72,7 @@ class DashboardController extends Controller
             'balance' => (float) $affiliate->balance,
             'total_withdrawn' => $totalWithdrawn,
             'pending_withdraw' => $pendingWithdrawAmount,
-            'minimum_withdraw' => 500,
+            'minimum_withdraw' => $minimumWithdrawAmount,
         ];
 
         return view('affiliates.dashboard.index', compact(

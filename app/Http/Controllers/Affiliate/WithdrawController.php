@@ -4,26 +4,31 @@ namespace App\Http\Controllers\Affiliate;
 
 use App\Http\Controllers\Controller;
 use App\Models\AffiliateWithdrawRequest;
+use App\Models\SiteSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class WithdrawController extends Controller
 {
-    private const MIN_WITHDRAW_AMOUNT = 500;
+    private function getMinimumWithdrawAmount(): float
+    {
+        return (float) (SiteSetting::query()->value('affiliate_minimum_withdraw_amount') ?? 500);
+    }
 
     public function store(Request $request): RedirectResponse
     {
         $affiliate = auth()->guard('affiliate')->user();
+        $minimumWithdrawAmount = $this->getMinimumWithdrawAmount();
 
         $validated = $request->validate([
-            'amount' => ['required', 'numeric', 'min:' . self::MIN_WITHDRAW_AMOUNT],
+            'amount' => ['required', 'numeric', 'min:' . $minimumWithdrawAmount],
             'account_type' => ['required', 'in:bkash,nagad,rocket'],
             'account_number' => ['required', 'string', 'max:30'],
             'account_name' => ['required', 'string', 'max:255'],
         ]);
 
-        if ((float) $affiliate->balance < self::MIN_WITHDRAW_AMOUNT) {
-            return back()->with('error', 'Minimum 500 BDT balance required before requesting a withdraw.');
+        if ((float) $affiliate->balance < $minimumWithdrawAmount) {
+            return back()->with('error', 'Minimum '.number_format($minimumWithdrawAmount, 2).' BDT balance required before requesting a withdraw.');
         }
 
         if ((float) $validated['amount'] > (float) $affiliate->balance) {

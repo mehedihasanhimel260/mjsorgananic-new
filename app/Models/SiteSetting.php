@@ -24,6 +24,8 @@ class SiteSetting extends Model
         'site_active',
         'chat_active',
         'affiliate_active',
+        'affiliate_minimum_withdraw_amount',
+        'affiliate_minimum_order_amount',
         'footer_logo',
         'footer_text',
         'footer_quick_links_title',
@@ -36,6 +38,8 @@ class SiteSetting extends Model
             'site_active' => 'boolean',
             'chat_active' => 'boolean',
             'affiliate_active' => 'boolean',
+            'affiliate_minimum_withdraw_amount' => 'decimal:2',
+            'affiliate_minimum_order_amount' => 'decimal:2',
         ];
     }
 }

@@ -40,7 +40,7 @@
             </p>
         </header>
         <div class="card-content">
-            <div class="max-h-[520px] space-y-4 overflow-y-auto pr-2">
+            <div id="conversation-scroll-box" class="max-h-[520px] space-y-4 overflow-y-auto pr-2">
                 @forelse ($chat->conversions as $conversion)
                 <div class="rounded-lg border px-4 py-3 {{ $conversion->sender_type === 'admin' ? 'bg-blue-50 border-blue-200 ml-10' : 'bg-gray-50 border-gray-200 mr-10' }}">
                     <div class="flex items-center justify-between gap-4">
@@ -84,3 +84,15 @@
     </div>
 </section>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const conversationBox = document.getElementById('conversation-scroll-box');
+
+    if (conversationBox) {
+        conversationBox.scrollTop = conversationBox.scrollHeight;
+    }
+});
+</script>
+@endpush

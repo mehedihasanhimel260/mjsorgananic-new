@@ -17,6 +17,8 @@ class SiteSettingController extends Controller
             'site_active' => true,
             'chat_active' => true,
             'affiliate_active' => true,
+            'affiliate_minimum_withdraw_amount' => 500,
+            'affiliate_minimum_order_amount' => 0,
             'footer_quick_links_title' => 'Quick Links',
         ]);
     }
@@ -63,6 +65,8 @@ class SiteSettingController extends Controller
             'site_active' => 'nullable|boolean',
             'chat_active' => 'nullable|boolean',
             'affiliate_active' => 'nullable|boolean',
+            'affiliate_minimum_withdraw_amount' => 'nullable|numeric|min:0',
+            'affiliate_minimum_order_amount' => 'nullable|numeric|min:0',
             'logo' => 'nullable|image|mimes:jpg,jpeg,png,webp,svg|max:4096',
             'favicon' => 'nullable|image|mimes:jpg,jpeg,png,webp,ico|max:2048',
             'footer_logo' => 'nullable|image|mimes:jpg,jpeg,png,webp,svg|max:4096',
@@ -84,6 +88,8 @@ class SiteSettingController extends Controller
         $validated['site_active'] = $request->boolean('site_active');
         $validated['chat_active'] = $request->boolean('chat_active');
         $validated['affiliate_active'] = $request->boolean('affiliate_active');
+        $validated['affiliate_minimum_withdraw_amount'] = $validated['affiliate_minimum_withdraw_amount'] ?? (float) ($setting->affiliate_minimum_withdraw_amount ?? 500);
+        $validated['affiliate_minimum_order_amount'] = $validated['affiliate_minimum_order_amount'] ?? (float) ($setting->affiliate_minimum_order_amount ?? 0);
 
         $setting->update($validated);
 

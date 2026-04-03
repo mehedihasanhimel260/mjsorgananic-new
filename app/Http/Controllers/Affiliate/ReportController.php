@@ -7,13 +7,18 @@ use App\Models\AffiliateCommission;
 use App\Models\AffiliateWithdrawRequest;
 use App\Models\AffiliateWalletTransaction;
 use App\Models\Order;
+use App\Models\SiteSetting;
 use App\Services\SteadfastService;
-use Illuminate\Http\Request;
 
 class ReportController extends Controller
 {
     public function __construct(private readonly SteadfastService $steadfastService)
     {
+    }
+
+    private function getMinimumWithdrawAmount(): float
+    {
+        return (float) (SiteSetting::query()->value('affiliate_minimum_withdraw_amount') ?? 500);
     }
 
     public function orders()
@@ -83,6 +88,7 @@ class ReportController extends Controller
     public function wallet()
     {
         $affiliate = auth()->guard('affiliate')->user();
+        $minimumWithdrawAmount = $this->getMinimumWithdrawAmount();
 
         $transactions = AffiliateWalletTransaction::with('order')
             ->where('affiliate_id', $affiliate->id)
@@ -95,7 +101,7 @@ class ReportController extends Controller
 
         $summary = [
             'balance' => (float) $affiliate->balance,
-            'minimum_withdraw' => 500,
+            'minimum_withdraw' => $minimumWithdrawAmount,
             'pending_withdraw' => (float) AffiliateWithdrawRequest::where('affiliate_id', $affiliate->id)
                 ->where('status', AffiliateWithdrawRequest::STATUS_PENDING)
                 ->sum('amount'),
