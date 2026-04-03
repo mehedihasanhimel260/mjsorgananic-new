@@ -11,6 +11,7 @@ class AffiliateWalletTransaction extends Model
 
     protected $fillable = [
         'affiliate_id',
+        'order_id',
         'type',
         'amount',
         'description',
@@ -26,5 +27,10 @@ class AffiliateWalletTransaction extends Model
     public function affiliate()
     {
         return $this->belongsTo(Affiliate::class);
+    }
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
     }
 }

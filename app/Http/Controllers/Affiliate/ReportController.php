@@ -7,9 +7,15 @@ use App\Models\AffiliateCommission;
 use App\Models\AffiliateWithdrawRequest;
 use App\Models\AffiliateWalletTransaction;
 use App\Models\Order;
+use App\Services\SteadfastService;
+use Illuminate\Http\Request;
 
 class ReportController extends Controller
 {
+    public function __construct(private readonly SteadfastService $steadfastService)
+    {
+    }
+
     public function orders()
     {
         $affiliate = auth()->guard('affiliate')->user();
@@ -20,6 +26,46 @@ class ReportController extends Controller
             ->paginate(20);
 
         return view('affiliates.orders.index', compact('orders'));
+    }
+
+    public function bookCourier(Order $order)
+    {
+        $affiliate = auth()->guard('affiliate')->user();
+
+        if ((int) $order->affiliate_id !== (int) $affiliate->id) {
+            abort(403);
+        }
+
+        if ($order->track_id) {
+            return back()->with('error', 'Courier booking already completed for this order.');
+        }
+
+        if ($order->order_status === 'cancelled') {
+            return back()->with('error', 'Cancelled orders cannot be booked.');
+        }
+
+        $result = $this->steadfastService->bookOrder($order);
+
+        return back()->with($result['success'] ? 'success' : 'error', $result['message']);
+    }
+
+    public function cancelOrder(Order $order)
+    {
+        $affiliate = auth()->guard('affiliate')->user();
+
+        if ((int) $order->affiliate_id !== (int) $affiliate->id) {
+            abort(403);
+        }
+
+        if ($order->track_id) {
+            return back()->with('error', 'Booked courier orders can no longer be cancelled from the affiliate panel.');
+        }
+
+        $order->update([
+            'order_status' => 'cancelled',
+        ]);
+
+        return back()->with('success', 'Order cancelled successfully.');
     }
 
     public function commissions()
@@ -38,7 +84,8 @@ class ReportController extends Controller
     {
         $affiliate = auth()->guard('affiliate')->user();
 
-        $transactions = AffiliateWalletTransaction::where('affiliate_id', $affiliate->id)
+        $transactions = AffiliateWalletTransaction::with('order')
+            ->where('affiliate_id', $affiliate->id)
             ->latest()
             ->paginate(20);
 

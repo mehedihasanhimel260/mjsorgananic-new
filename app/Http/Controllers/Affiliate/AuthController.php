@@ -49,6 +49,7 @@ class AuthController extends Controller
         }
 
         $request->session()->regenerate();
+        $request->session()->forget('impersonated_by_admin_id');
         Auth::guard('affiliate')->user()?->update(['last_login_at' => now()]);
 
         return redirect()->route('affiliates.dashboard');
@@ -75,12 +76,30 @@ class AuthController extends Controller
 
         Auth::guard('affiliate')->login($affiliate);
         $request->session()->regenerate();
+        $request->session()->forget('impersonated_by_admin_id');
 
         return redirect()->route('affiliates.dashboard')->with('success', 'Affiliate account created successfully.');
     }
 
+    public function leaveImpersonation(Request $request)
+    {
+        if (! $request->session()->has('impersonated_by_admin_id')) {
+            return redirect()->route('affiliates.dashboard');
+        }
+
+        Auth::guard('affiliate')->logout();
+        $request->session()->forget('impersonated_by_admin_id');
+        $request->session()->regenerateToken();
+
+        return redirect()->route('admin.dashboard')->with('success', 'Returned to admin panel successfully.');
+    }
+
     public function logout(Request $request)
     {
+        if ($request->session()->has('impersonated_by_admin_id')) {
+            return $this->leaveImpersonation($request);
+        }
+
         Auth::guard('affiliate')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

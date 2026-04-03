@@ -28,9 +28,12 @@ Route::prefix('affiliates')
             Route::get('/links', [AffiliateLinkController::class, 'index'])->name('links.index');
             Route::post('/links', [AffiliateLinkController::class, 'store'])->name('links.store');
             Route::get('/orders', [AffiliateReportController::class, 'orders'])->name('orders.index');
+            Route::post('/orders/{order}/book-courier', [AffiliateReportController::class, 'bookCourier'])->name('orders.book-courier');
+            Route::post('/orders/{order}/cancel', [AffiliateReportController::class, 'cancelOrder'])->name('orders.cancel');
             Route::get('/commissions', [AffiliateReportController::class, 'commissions'])->name('commissions.index');
             Route::get('/wallet', [AffiliateReportController::class, 'wallet'])->name('wallet.index');
             Route::post('/wallet/withdraw', [AffiliateWithdrawController::class, 'store'])->name('wallet.withdraw.store');
+            Route::post('/impersonation/leave', [AffiliateAuthController::class, 'leaveImpersonation'])->name('impersonation.leave');
             Route::post('/logout', [AffiliateAuthController::class, 'logout'])->name('logout');
         });
     });

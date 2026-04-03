@@ -41,4 +41,9 @@ class Order extends Model
     {
         return $this->hasMany(StockOutLog::class);
     }
+
+    public function walletTransactions()
+    {
+        return $this->hasMany(AffiliateWalletTransaction::class);
+    }
 }

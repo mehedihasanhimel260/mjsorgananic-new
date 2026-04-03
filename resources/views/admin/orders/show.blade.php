@@ -5,66 +5,120 @@
     $productTotal = $order->items->sum(fn($item) => $item->quantity * $item->sell_price);
     $grandTotal = $productTotal + ($order->delivery_charge ?? 0) - ($order->discount_amount ?? 0);
     $courierResponse = $order->courier_api_response ?? [];
-    $bookingSuccess = ($courierResponse['status'] ?? null) === 200;
+    $bookingSuccess = ($courierResponse['status'] ?? null) === 200 || !empty($order->track_id);
+    $orderStatus = $order->order_status ?? 'pending';
+    $canBook = ! $bookingSuccess && $orderStatus !== 'cancelled';
+    $statusClass = match ($orderStatus) {
+        'cancelled' => 'bg-red-100 text-red-700',
+        'delivered' => 'bg-green-100 text-green-700',
+        'partial_delivered' => 'bg-yellow-100 text-yellow-700',
+        'in_review', 'submitted' => 'bg-blue-100 text-blue-700',
+        default => 'bg-gray-100 text-gray-700',
+    };
 @endphp
 <section class="section main-section">
-    <div class="card mb-6">
-        <header class="card-header">
-            <p class="card-header-title">
-                <span class="icon"><i class="mdi mdi-receipt"></i></span>
-                Order Details
-            </p>
-            <a href="{{ route('admin.orders.index') }}" class="button blue">
-                <span class="icon"><i class="mdi mdi-arrow-left"></i></span>
-                <span>Back</span>
-            </a>
-        </header>
-        <div class="card-content">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <h3 class="title is-5 mb-4">Order Information</h3>
-                    <p><strong>Order No:</strong> {{ $order->order_number }}</p>
-                    <p><strong>Type:</strong> {{ ucfirst($order->order_type) }}</p>
-                    <p><strong>Total:</strong> {{ $order->total_amount }}</p>
-                    <p><strong>Order Status:</strong> {{ $order->order_status ?? 'N/A' }}</p>
-                    <p><strong>Track ID:</strong> {{ $order->track_id ?? 'N/A' }}</p>
-                    <p><strong>Courier API Response:</strong> {{ $bookingSuccess ? 'Received' : 'Not booked yet' }}</p>
-                    <p><strong>Created:</strong> {{ $order->created_at->format('Y-m-d H:i') }}</p>
-                    <div class="mt-4 flex flex-wrap gap-3">
-                        <form action="{{ route('admin.orders.status.update', $order->id) }}" method="POST" onsubmit="return confirm('Mark this order as cancelled?')">
-                            @csrf
-                            <input type="hidden" name="order_status" value="cancelled">
-                            <button type="submit" class="button red">
-                                <span class="icon"><i class="mdi mdi-cancel"></i></span>
-                                <span>Mark Cancelled</span>
-                            </button>
-                        </form>
-                        @if ($order->track_id)
-                        <form action="{{ route('admin.orders.sync-courier-status', $order->id) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="button blue">
-                                <span class="icon"><i class="mdi mdi-refresh"></i></span>
-                                <span>Sync Courier Status</span>
-                            </button>
-                        </form>
-                        @endif
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+        <div class="card xl:col-span-2">
+            <header class="card-header">
+                <p class="card-header-title">
+                    <span class="icon"><i class="mdi mdi-receipt"></i></span>
+                    Order Details
+                </p>
+                <a href="{{ route('admin.orders.index') }}" class="button blue">
+                    <span class="icon"><i class="mdi mdi-arrow-left"></i></span>
+                    <span>Back</span>
+                </a>
+            </header>
+            <div class="card-content">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="rounded-xl border border-gray-100 bg-gray-50 p-5">
+                        <h3 class="title is-5 mb-4">Order Information</h3>
+                        <div class="space-y-3 text-sm text-gray-700">
+                            <p><strong>Order No:</strong> {{ $order->order_number }}</p>
+                            <p><strong>Type:</strong> {{ ucfirst($order->order_type) }}</p>
+                            <p><strong>Total:</strong> {{ number_format((float) $order->total_amount, 2) }}</p>
+                            <p>
+                                <strong>Order Status:</strong>
+                                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $statusClass }}">
+                                    {{ ucfirst(str_replace('_', ' ', $orderStatus)) }}
+                                </span>
+                            </p>
+                            <p><strong>Track ID:</strong> {{ $order->track_id ?? 'N/A' }}</p>
+                            <p><strong>Courier API Response:</strong> {{ $bookingSuccess ? 'Received' : 'Not booked yet' }}</p>
+                            <p><strong>Created:</strong> {{ $order->created_at->format('Y-m-d H:i') }}</p>
+                        </div>
+                    </div>
+                    <div class="rounded-xl border border-gray-100 bg-gray-50 p-5">
+                        <h3 class="title is-5 mb-4">Customer Information</h3>
+                        <div class="space-y-3 text-sm text-gray-700">
+                            <p>
+                                <strong>Name:</strong>
+                                @if ($order->user)
+                                <a href="{{ route('admin.users.edit', $order->user->id) }}" class="text-blue-600 hover:underline">
+                                    {{ $order->user->name }}
+                                </a>
+                                @else
+                                N/A
+                                @endif
+                            </p>
+                            <p><strong>Phone:</strong> {{ $order->user?->phone ?? 'N/A' }}</p>
+                            <p><strong>Address:</strong> {{ $order->user?->saved_address ?? 'N/A' }}</p>
+                            <p><strong>Affiliate:</strong> {{ $order->affiliate?->name ?? 'Direct Order' }}</p>
+                        </div>
                     </div>
                 </div>
-                <div>
-                    <h3 class="title is-5 mb-4">Customer Information</h3>
-                    <p>
-                        <strong>Name:</strong>
-                        @if ($order->user)
-                        <a href="{{ route('admin.users.edit', $order->user->id) }}" class="text-blue-600 hover:underline">
-                            {{ $order->user->name }}
-                        </a>
-                        @else
-                        N/A
-                        @endif
-                    </p>
-                    <p><strong>Phone:</strong> {{ $order->user?->phone ?? 'N/A' }}</p>
-                    <p><strong>Address:</strong> {{ $order->user?->saved_address ?? 'N/A' }}</p>
-                    <p><strong>Affiliate:</strong> {{ $order->affiliate?->name ?? 'Direct Order' }}</p>
+                <div class="mt-5 flex flex-wrap gap-3">
+                    @if ($canBook)
+                    <form action="{{ route('admin.orders.status.update', $order->id) }}" method="POST" onsubmit="return confirm('Mark this order as cancelled?')">
+                        @csrf
+                        <input type="hidden" name="order_status" value="cancelled">
+                        <button type="submit" class="button red">
+                            <span class="icon"><i class="mdi mdi-cancel"></i></span>
+                            <span>Mark Cancelled</span>
+                        </button>
+                    </form>
+                    @else
+                    <button type="button" class="button red opacity-50 cursor-not-allowed" disabled>
+                        <span class="icon"><i class="mdi mdi-lock-outline"></i></span>
+                        <span>Cancel Unavailable</span>
+                    </button>
+                    @endif
+                    @if ($order->track_id)
+                    <form action="{{ route('admin.orders.sync-courier-status', $order->id) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="button blue">
+                            <span class="icon"><i class="mdi mdi-refresh"></i></span>
+                            <span>Sync Courier Status</span>
+                        </button>
+                    </form>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <header class="card-header">
+                <p class="card-header-title">
+                    <span class="icon"><i class="mdi mdi-cash-multiple"></i></span>
+                    Order Summary
+                </p>
+            </header>
+            <div class="card-content space-y-4">
+                <div class="rounded-xl border border-gray-100 bg-gray-50 p-4 flex items-center justify-between">
+                    <span class="text-gray-500">Product Total</span>
+                    <strong>{{ number_format((float) $productTotal, 2) }}</strong>
+                </div>
+                <div class="rounded-xl border border-gray-100 bg-gray-50 p-4 flex items-center justify-between">
+                    <span class="text-gray-500">Delivery Charge</span>
+                    <strong>{{ number_format((float) ($order->delivery_charge ?? 0), 2) }}</strong>
+                </div>
+                <div class="rounded-xl border border-gray-100 bg-gray-50 p-4 flex items-center justify-between">
+                    <span class="text-gray-500">Discount</span>
+                    <strong>{{ number_format((float) ($order->discount_amount ?? 0), 2) }}</strong>
+                </div>
+                <div class="rounded-xl border border-blue-100 bg-blue-50 p-4 flex items-center justify-between text-blue-900">
+                    <span class="font-semibold">Grand Total</span>
+                    <strong>{{ number_format((float) $grandTotal, 2) }}</strong>
                 </div>
             </div>
         </div>
@@ -81,7 +135,7 @@
                     <span class="icon"><i class="mdi mdi-percent"></i></span>
                     <span>Total Discount</span>
                 </button>
-                @if (! $bookingSuccess)
+                @if ($canBook)
                 <form action="{{ route('admin.orders.book-courier', $order->id) }}" method="POST">
                     @csrf
                     <button type="submit" class="button green">
@@ -89,6 +143,11 @@
                         <span>Booking</span>
                     </button>
                 </form>
+                @else
+                <button type="button" class="button green opacity-70 cursor-default" disabled>
+                    <span class="icon"><i class="mdi mdi-check-circle-outline"></i></span>
+                    <span>Courier Booked / Locked</span>
+                </button>
                 @endif
             </div>
         </header>
@@ -196,24 +255,6 @@
                     </tr>
                     @endforeach
                 </tbody>
-                <tfoot>
-                    <tr>
-                        <th colspan="5" class="has-text-right">Product Total</th>
-                        <th>{{ $productTotal }}</th>
-                    </tr>
-                    <tr>
-                        <th colspan="5" class="has-text-right">Delivery Charge</th>
-                        <th>{{ $order->delivery_charge ?? 0 }}</th>
-                    </tr>
-                    <tr>
-                        <th colspan="5" class="has-text-right">Discount Amount</th>
-                        <th>{{ $order->discount_amount ?? 0 }}</th>
-                    </tr>
-                    <tr>
-                        <th colspan="5" class="has-text-right">Grand Total</th>
-                        <th>{{ $grandTotal }}</th>
-                    </tr>
-                </tfoot>
             </table>
 
             @if ($bookingSuccess)
@@ -304,3 +345,4 @@
     </div>
 </section>
 @endsection
+

@@ -27,30 +27,12 @@
                     <span class="icon"><i class="mdi mdi-plus"></i></span>
                 </a>
                 <ul>
-                    <li>
-                        <a href="{{ route('admin.products.index') }}">
-                            <span>Products</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ route('admin.categories.index') }}">
-                            <span>Categories</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ route('admin.product-stocks.index') }}">
-                            <span>Products Stock</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ route('admin.product-commissions.index') }}">
-                            <span>Product Commissions</span>
-                        </a>
-                    </li>
-
+                    <li><a href="{{ route('admin.products.index') }}"><span>Products</span></a></li>
+                    <li><a href="{{ route('admin.categories.index') }}"><span>Categories</span></a></li>
+                    <li><a href="{{ route('admin.product-stocks.index') }}"><span>Products Stock</span></a></li>
+                    <li><a href="{{ route('admin.product-commissions.index') }}"><span>Product Commissions</span></a></li>
                 </ul>
             </li>
-
             <li class="--set-active-tables-html">
                 <a href="{{ route('admin.orders.index') }}">
                     <span class="icon"><i class="mdi mdi-cart-outline"></i></span>
@@ -69,6 +51,12 @@
         </ul>
         <p class="menu-label">Affiliate Managment</p>
         <ul class="menu-list">
+            <li>
+                <a href="{{ route('admin.affiliates.index') }}" class="has-icon">
+                    <span class="icon"><i class="mdi mdi-account-star-outline"></i></span>
+                    <span class="menu-item-label">Affiliates</span>
+                </a>
+            </li>
             <li>
                 <a href="{{ route('admin.affiliate-withdraws.index') }}" class="has-icon">
                     <span class="icon"><i class="mdi mdi-cash-refund"></i></span>
@@ -118,7 +106,7 @@
         <p class="menu-label">About</p>
         <ul class="menu-list">
             <li>
-                <a href="https://justboil.me/tailwind-admin-templates/free-dashboard/" class="has-icon">
+                <a href="#" class="has-icon">
                     <span class="icon"><i class="mdi mdi-information-outline"></i></span>
                     <span class="menu-item-label">About</span>
                 </a>

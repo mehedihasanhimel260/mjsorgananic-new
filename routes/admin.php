@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AccountController as AdminAccountController;
+use App\Http\Controllers\Admin\AffiliateController as AdminAffiliateController;
 use App\Http\Controllers\Admin\AffiliateWithdrawController as AdminAffiliateWithdrawController;
 use App\Http\Controllers\Admin\AiSettingController;
 use App\Http\Controllers\Admin\Auth\LoginController;
@@ -60,6 +61,8 @@ Route::prefix('admin')
             Route::get('users', [UserController::class, 'index'])->name('users.index');
             Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
             Route::patch('users/{user}', [UserController::class, 'update'])->name('users.update');
+            Route::get('affiliates', [AdminAffiliateController::class, 'index'])->name('affiliates.index');
+            Route::post('affiliates/{affiliate}/impersonate', [AdminAffiliateController::class, 'impersonate'])->name('affiliates.impersonate');
             Route::get('affiliate-withdraws', [AdminAffiliateWithdrawController::class, 'index'])->name('affiliate-withdraws.index');
             Route::get('affiliate-withdraws/{affiliateWithdrawRequest}', [AdminAffiliateWithdrawController::class, 'show'])->name('affiliate-withdraws.show');
             Route::post('affiliate-withdraws/{affiliateWithdrawRequest}/approve', [AdminAffiliateWithdrawController::class, 'approve'])->name('affiliate-withdraws.approve');

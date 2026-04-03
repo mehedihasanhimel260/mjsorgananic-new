@@ -9,6 +9,7 @@
           <p class="text-sm text-gray-500">Operational overview for the selected date range.</p>
         </div>
         <div class="buttons">
+          <a href="{{ route('admin.affiliates.index') }}" class="button">Affiliates</a>
           <a href="{{ route('admin.dashboard', ['range' => 'today']) }}" class="button {{ $range === 'today' ? 'blue' : '' }}">Today</a>
           <a href="{{ route('admin.dashboard', ['range' => '7d']) }}" class="button {{ $range === '7d' ? 'blue' : '' }}">7 Days</a>
           <a href="{{ route('admin.dashboard', ['range' => '30d']) }}" class="button {{ $range === '30d' ? 'blue' : '' }}">30 Days</a>
@@ -323,3 +324,5 @@
   </div>
 </section>
 @endsection
+
+

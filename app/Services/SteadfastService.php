@@ -2,8 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\Affiliate;
+use App\Models\AffiliateWalletTransaction;
 use App\Models\Order;
 use App\Models\SteadfastSetting;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 class SteadfastService
@@ -67,6 +70,88 @@ class SteadfastService
         ];
     }
 
+    public function bookOrder(Order $order, ?SteadfastSetting $setting = null): array
+    {
+        $setting ??= $this->getSetting();
+        $order->loadMissing(['user', 'items.product']);
+
+        if ($order->track_id) {
+            return [
+                'success' => false,
+                'message' => 'Courier booking already completed for this order.',
+            ];
+        }
+
+        if (! $this->hasCredentials($setting)) {
+            return [
+                'success' => false,
+                'message' => 'Please configure Steadfast Api-Key and Secret-Key first.',
+            ];
+        }
+
+        if ($order->order_status === 'cancelled') {
+            return [
+                'success' => false,
+                'message' => 'Cancelled orders cannot be booked.',
+            ];
+        }
+
+        if (! $order->user || ! $order->user->name || ! $order->user->phone || ! $order->user->saved_address) {
+            return [
+                'success' => false,
+                'message' => 'Customer name, phone, and saved address are required for booking.',
+            ];
+        }
+
+        try {
+            $payload = [
+                'invoice' => $order->order_number,
+                'recipient_name' => $order->user->name,
+                'recipient_phone' => $order->user->phone,
+                'recipient_address' => $order->user->saved_address,
+                'cod_amount' => $this->getGrandTotal($order),
+                'item_description' => $this->getItemDescription($order),
+                'total_lot' => 1,
+                'delivery_type' => 0,
+            ];
+
+            $response = Http::timeout(20)
+                ->withHeaders($this->headers($setting))
+                ->post(self::BASE_URL.'/create_order', $payload);
+
+            $data = $response->json();
+            $responsePayload = is_array($data) ? $data : [];
+            $responsePayload['item_description'] = $payload['item_description'];
+
+            $order->update([
+                'order_status' => $data['consignment']['status'] ?? $data['delivery_status'] ?? ($response->successful() ? 'submitted' : 'failed'),
+                'track_id' => $data['consignment']['tracking_code'] ?? null,
+                'courier_api_response' => $responsePayload,
+            ]);
+
+            return [
+                'success' => ($data['status'] ?? null) === 200,
+                'message' => ($data['status'] ?? null) === 200
+                    ? 'Steadfast booking completed successfully.'
+                    : 'Steadfast booking failed.',
+                'data' => $responsePayload,
+            ];
+        } catch (\Throwable $exception) {
+            $order->update([
+                'order_status' => 'failed',
+                'courier_api_response' => [
+                    'status' => 500,
+                    'message' => $exception->getMessage(),
+                ],
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Could not connect to Steadfast: '.$exception->getMessage(),
+            ];
+        }
+    }
+
     public function syncOrderStatus(Order $order, ?SteadfastSetting $setting = null): array
     {
         $setting ??= $this->getSetting();
@@ -116,11 +201,70 @@ class SteadfastService
             'courier_api_response' => $courierResponse,
         ]);
 
+        if ($deliveryStatus === 'cancelled') {
+            $this->deductAffiliateDeliveryChargeForCancelledCourierOrder($order->fresh());
+        }
+
         return [
             'success' => true,
             'message' => 'Order status synced successfully.',
             'data' => $data,
         ];
+    }
+
+    private function deductAffiliateDeliveryChargeForCancelledCourierOrder(Order $order): void
+    {
+        if ($order->order_type !== 'affiliate' || ! $order->affiliate_id) {
+            return;
+        }
+
+        $deliveryCharge = (float) ($order->delivery_charge ?? 0);
+
+        if ($deliveryCharge <= 0) {
+            return;
+        }
+
+        DB::transaction(function () use ($order, $deliveryCharge) {
+            $alreadyDebited = AffiliateWalletTransaction::where('affiliate_id', $order->affiliate_id)
+                ->where('order_id', $order->id)
+                ->where('type', 'debit')
+                ->lockForUpdate()
+                ->exists();
+
+            if ($alreadyDebited) {
+                return;
+            }
+
+            $affiliate = Affiliate::lockForUpdate()->find($order->affiliate_id);
+
+            if (! $affiliate) {
+                return;
+            }
+
+            AffiliateWalletTransaction::create([
+                'affiliate_id' => $affiliate->id,
+                'order_id' => $order->id,
+                'type' => 'debit',
+                'amount' => $deliveryCharge,
+                'description' => 'Delivery charge deducted for cancelled courier order '.$order->order_number,
+            ]);
+
+            $affiliate->decrement('balance', $deliveryCharge);
+        });
+    }
+
+    private function getGrandTotal(Order $order): float
+    {
+        return (float) $order->items->sum(fn ($item) => $item->quantity * $item->sell_price)
+            + (float) ($order->delivery_charge ?? 0)
+            - (float) ($order->discount_amount ?? 0);
+    }
+
+    private function getItemDescription(Order $order): string
+    {
+        return $order->items
+            ->map(fn ($item) => ($item->product?->name ?? 'Product').', '.$item->quantity.'pcs')
+            ->join(' | ');
     }
 
     private function headers(SteadfastSetting $setting): array

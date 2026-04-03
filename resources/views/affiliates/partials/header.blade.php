@@ -14,6 +14,17 @@
   </div>
   <div class="navbar-menu" id="navbar-menu">
     <div class="navbar-end">
+      @if(session()->has('impersonated_by_admin_id'))
+      <div class="navbar-item">
+        <form action="{{ route('affiliates.impersonation.leave') }}" method="POST">
+          @csrf
+          <button type="submit" class="button small blue">
+            <span class="icon"><i class="mdi mdi-arrow-left-bold-circle-outline"></i></span>
+            <span>Back to Admin</span>
+          </button>
+        </form>
+      </div>
+      @endif
       <div class="navbar-item dropdown has-divider has-user-avatar">
         <a class="navbar-link">
           <div class="user-avatar">
@@ -35,7 +46,7 @@
           <a class="navbar-item"
             onclick="event.preventDefault(); document.getElementById('affiliate-logout-form').submit();">
             <span class="icon"><i class="mdi mdi-logout"></i></span>
-            <span>Log Out</span>
+            <span>{{ session()->has('impersonated_by_admin_id') ? 'Leave Affiliate View' : 'Log Out' }}</span>
           </a>
           <form id="affiliate-logout-form" action="{{ route('affiliates.logout') }}" method="POST" style="display: none;">
             @csrf

@@ -133,7 +133,8 @@
                     <tr>
                         <th>Type</th>
                         <th>Amount</th>
-                        <th>Description</th>
+                        <th>Order</th>
+                        <th>Remark</th>
                         <th>Created</th>
                     </tr>
                 </thead>
@@ -146,12 +147,13 @@
                             </span>
                         </td>
                         <td>{{ number_format((float) $transaction->amount, 2) }}</td>
+                        <td>{{ $transaction->order?->order_number ?? 'N/A' }}</td>
                         <td>{{ $transaction->description }}</td>
                         <td>{{ optional($transaction->created_at)->format('Y-m-d h:i A') }}</td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="4" class="has-text-centered">No wallet transaction found.</td>
+                        <td colspan="5" class="has-text-centered">No wallet transaction found.</td>
                     </tr>
                     @endforelse
                 </tbody>
