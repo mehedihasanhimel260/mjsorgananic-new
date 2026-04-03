@@ -3,6 +3,7 @@
 @section('content')
 <div class="max-w-6xl mx-auto p-4">
   @include('front-site.partials.tracked-affiliate-banner')
+  @include('front-site.partials.recent-orders')
   <div id="product-list" class="grid md:grid-cols-3 gap-6">
     @foreach ($products as $product)
       <div class="bg-white rounded-xl shadow hover:scale-[1.02] transition">

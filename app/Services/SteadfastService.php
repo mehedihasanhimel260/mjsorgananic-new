@@ -104,13 +104,24 @@ class SteadfastService
         }
 
         try {
+            $recipientPhone = $this->normalizePhone((string) $order->user->phone);
+            $recipientName = $this->limitText((string) $order->user->name, 100);
+            $recipientAddress = $this->limitText((string) $order->user->saved_address, 250);
+
+            if (! $recipientPhone) {
+                return [
+                    'success' => false,
+                    'message' => 'Customer phone must be a valid 11 digit number for Steadfast booking.',
+                ];
+            }
+
             $payload = [
-                'invoice' => $order->order_number,
-                'recipient_name' => $order->user->name,
-                'recipient_phone' => $order->user->phone,
-                'recipient_address' => $order->user->saved_address,
-                'cod_amount' => $this->getGrandTotal($order),
-                'item_description' => $this->getItemDescription($order),
+                'invoice' => $this->limitText((string) $order->order_number, 100),
+                'recipient_name' => $recipientName,
+                'recipient_phone' => $recipientPhone,
+                'recipient_address' => $recipientAddress,
+                'cod_amount' => max(0, round($this->getGrandTotal($order), 2)),
+                'item_description' => $this->limitText($this->getItemDescription($order), 250),
                 'total_lot' => 1,
                 'delivery_type' => 0,
             ];
@@ -122,18 +133,26 @@ class SteadfastService
             $data = $response->json();
             $responsePayload = is_array($data) ? $data : [];
             $responsePayload['item_description'] = $payload['item_description'];
+            $responsePayload['http_status'] = $response->status();
+            $responsePayload['request_payload'] = $payload;
+
+            if (! is_array($data)) {
+                $responsePayload['raw_response'] = $response->body();
+            }
 
             $order->update([
-                'order_status' => $data['consignment']['status'] ?? $data['delivery_status'] ?? ($response->successful() ? 'submitted' : 'failed'),
-                'track_id' => $data['consignment']['tracking_code'] ?? null,
+                'order_status' => is_array($data)
+                    ? ($data['consignment']['status'] ?? $data['delivery_status'] ?? ($response->successful() ? 'submitted' : 'failed'))
+                    : ($response->successful() ? 'submitted' : 'failed'),
+                'track_id' => is_array($data) ? ($data['consignment']['tracking_code'] ?? null) : null,
                 'courier_api_response' => $responsePayload,
             ]);
 
             return [
-                'success' => ($data['status'] ?? null) === 200,
-                'message' => ($data['status'] ?? null) === 200
+                'success' => is_array($data) && ($data['status'] ?? null) === 200,
+                'message' => is_array($data) && ($data['status'] ?? null) === 200
                     ? 'Steadfast booking completed successfully.'
-                    : 'Steadfast booking failed.',
+                    : $this->resolveBookingErrorMessage($responsePayload, $response->status()),
                 'data' => $responsePayload,
             ];
         } catch (\Throwable $exception) {
@@ -274,5 +293,54 @@ class SteadfastService
             'Secret-Key' => $setting->secret_key,
             'Content-Type' => 'application/json',
         ];
+    }
+
+    private function normalizePhone(string $phone): ?string
+    {
+        $digits = preg_replace('/\D+/', '', $phone);
+
+        if (! $digits) {
+            return null;
+        }
+
+        if (strlen($digits) >= 11) {
+            $digits = substr($digits, -11);
+        }
+
+        if (strlen($digits) !== 11 || ! str_starts_with($digits, '01')) {
+            return null;
+        }
+
+        return $digits;
+    }
+
+    private function limitText(string $value, int $limit): string
+    {
+        $clean = trim(preg_replace('/\s+/', ' ', $value));
+
+        return mb_substr($clean, 0, $limit);
+    }
+
+    private function resolveBookingErrorMessage(array $data, int $httpStatus): string
+    {
+        $message = $data['message'] ?? $data['error'] ?? null;
+
+        if (is_string($message) && trim($message) !== '') {
+            return 'Steadfast booking failed: '.trim($message);
+        }
+
+        if (isset($data['errors']) && is_array($data['errors'])) {
+            $firstError = collect($data['errors'])->flatten()->first();
+
+            if (is_string($firstError) && trim($firstError) !== '') {
+                return 'Steadfast booking failed: '.trim($firstError);
+            }
+        }
+
+        if (! empty($data['raw_response'])) {
+            return 'Steadfast booking failed: '.trim((string) $data['raw_response']);
+        }
+
+        return 'Steadfast booking failed. HTTP status: '.$httpStatus.'.';
     }
 }

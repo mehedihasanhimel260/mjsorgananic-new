@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Front_site;
 use App\Http\Controllers\Controller;
 use App\Models\Affiliate;
 use App\Models\DeliveryChargeSetting;
+use App\Models\Order;
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class FrontSiteController extends Controller
@@ -40,7 +42,22 @@ class FrontSiteController extends Controller
             $trackedAffiliate = Affiliate::find($affiliateTracking['affiliate_id']);
         }
 
-        return compact('products', 'deliverySetting', 'trackedAffiliate');
+        $recentOrders = collect();
+        $sessionUserId = session('user_id');
+
+        if ($sessionUserId) {
+            $user = User::find($sessionUserId);
+
+            if ($user) {
+                $recentOrders = Order::with(['items.product'])
+                    ->where('user_id', $user->id)
+                    ->latest()
+                    ->take(3)
+                    ->get();
+            }
+        }
+
+        return compact('products', 'deliverySetting', 'trackedAffiliate', 'recentOrders');
     }
 
     public function index()

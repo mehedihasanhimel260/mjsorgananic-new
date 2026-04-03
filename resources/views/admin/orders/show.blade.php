@@ -45,6 +45,9 @@
                             </p>
                             <p><strong>Track ID:</strong> {{ $order->track_id ?? 'N/A' }}</p>
                             <p><strong>Courier API Response:</strong> {{ $bookingSuccess ? 'Received' : 'Not booked yet' }}</p>
+                            @if(!empty($courierResponse['message']))
+                                <p><strong>API Message:</strong> <span class="text-red-600">{{ $courierResponse['message'] }}</span></p>
+                            @endif
                             <p><strong>Created:</strong> {{ $order->created_at->format('Y-m-d H:i') }}</p>
                         </div>
                     </div>
@@ -257,7 +260,7 @@
                 </tbody>
             </table>
 
-            @if ($bookingSuccess)
+            @if ($bookingSuccess || !empty($courierResponse))
             <details class="mt-6 border rounded-lg bg-gray-50" open>
                 <summary class="cursor-pointer px-4 py-3 font-semibold text-gray-700">Steadfast Booking Response</summary>
                 <div class="p-4">
@@ -299,6 +302,18 @@
                                 <th>Item Description</th>
                                 <td>{{ $courierResponse['item_description'] ?? $order->items->map(fn($item) => ($item->product?->name ?? 'Product').', '.$item->quantity.'pcs')->join(' | ') }}</td>
                             </tr>
+                            @if(!empty($courierResponse['http_status']))
+                            <tr>
+                                <th>HTTP Status</th>
+                                <td>{{ $courierResponse['http_status'] }}</td>
+                            </tr>
+                            @endif
+                            @if(!empty($courierResponse['message']))
+                            <tr>
+                                <th>API Error Message</th>
+                                <td class="text-red-600">{{ $courierResponse['message'] }}</td>
+                            </tr>
+                            @endif
                         </tbody>
                     </table>
                 </div>
@@ -345,4 +360,3 @@
     </div>
 </section>
 @endsection
-
