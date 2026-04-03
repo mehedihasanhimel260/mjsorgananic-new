@@ -3,10 +3,9 @@
 namespace App\Http\Controllers\Front_site;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\GenerateChatAiReplyJob;
 use App\Models\Chat;
 use App\Models\Conversion;
-use App\Models\Faq;
-use App\Models\Product;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,39 +14,6 @@ use Illuminate\Support\Facades\Log;
 
 class ChatController extends Controller
 {
-    private function normalizeMessageForKeywordMatch(string $message): string
-    {
-        $normalized = preg_replace('/[^\p{L}\p{N}\s]+/u', ' ', mb_strtolower($message));
-
-        return trim(preg_replace('/\s+/', ' ', $normalized ?? ''));
-    }
-
-    private function findFaqAnswerByKeyword(string $message): ?string
-    {
-        $normalizedMessage = $this->normalizeMessageForKeywordMatch($message);
-
-        if ($normalizedMessage === '') {
-            return null;
-        }
-
-        $faqs = Faq::query()
-            ->select('question', 'answer', 'keyword')
-            ->latest()
-            ->get();
-
-        foreach ($faqs as $faq) {
-            foreach ($faq->keyword_list as $keyword) {
-                $normalizedKeyword = $this->normalizeMessageForKeywordMatch($keyword);
-
-                if ($normalizedKeyword !== '' && str_contains($normalizedMessage, $normalizedKeyword)) {
-                    return $faq->answer;
-                }
-            }
-        }
-
-        return null;
-    }
-
     private function normalizeBangladeshPhone(string $phone): ?string
     {
         $digits = preg_replace('/\D+/', '', $phone ?? '');
@@ -65,81 +31,6 @@ class ChatController extends Controller
         }
 
         return $digits;
-    }
-
-    private function buildFaqContext(): string
-    {
-        $faqs = Faq::query()
-            ->select('question', 'answer', 'keyword')
-            ->latest()
-            ->take(20)
-            ->get();
-
-        if ($faqs->isEmpty()) {
-            return 'FAQ data not available.';
-        }
-
-        return $faqs->map(function (Faq $faq, int $index) {
-            return ($index + 1).'. Question: '.$faq->question
-                .' | Answer: '.$faq->answer
-                .' | Keyword: '.($faq->keyword_list ? implode(', ', $faq->keyword_list) : 'N/A');
-        })->implode("\n");
-    }
-
-    private function buildProductContext(): string
-    {
-        $products = Product::query()
-            ->where('status', 'active')
-            ->select('name', 'selling_price', 'short_description', 'long_description', 'keywords')
-            ->latest()
-            ->take(20)
-            ->get();
-
-        if ($products->isEmpty()) {
-            return 'Product data not available.';
-        }
-
-        return $products->map(function (Product $product, int $index) {
-            return ($index + 1).'. Product: '.$product->name
-                .' | Price: '.$product->selling_price
-                .' | Short Description: '.($product->short_description ?: 'N/A')
-                .' | Details: '.($product->long_description ?: 'N/A')
-                .' | Keywords: '.($product->keywords ?: 'N/A');
-        })->implode("\n");
-    }
-
-    private function buildAiPrompt(User $user, string $message): string
-    {
-        $faqContext = $this->buildFaqContext();
-        $productContext = $this->buildProductContext();
-
-        return <<<PROMPT
-তুমি MJS Organic-এর বাংলা কাস্টমার সাপোর্ট ও সেলস অ্যাসিস্ট্যান্ট।
-
-কঠোর নিয়ম:
-- সব উত্তর শুধু বাংলায় লিখবে।
-- সালাম দিবে, নমস্কার বলবে না।
-- উত্তর এক বাক্যে দিন, প্রয়োজন হলে সর্বোচ্চ দুইটি।
-- অপ্রয়োজনীয় ব্যাখ্যা, বড় paragraph, bullet list বা লম্বা marketing লেখা দেবে না।
-- কাস্টমারকে অর্ডার করতে আগ্রহী করার চেষ্টা করবে।
-- প্রোডাক্ট তথ্য থাকলে ইতিবাচক, বাস্তবসম্মত ও বিক্রয়-সহায়কভাবে বলবে।
-- FAQ থেকে উত্তর পাওয়া গেলে FAQ অনুযায়ী উত্তর দেবে।
-- ভুল তথ্য বানাবে না।
-- তথ্য না পেলে বা নিশ্চিত না হলে অবশ্যই বলবে:
-"দুঃখিত, এই বিষয়ে এই মুহূর্তে সঠিক তথ্য দিতে পারছি না। অনুগ্রহ করে আমাদের WhatsApp নম্বর 01309003117 এ যোগাযোগ করুন।"
-- প্রয়োজনে খুব ছোটভাবে বলবে: "নাম, মোবাইল নম্বর ও ঠিকানা দিলে অর্ডার প্রসেস করে দিতে পারি।"
-- উত্তর সংক্ষিপ্ত, মানবিক, সহায়ক ও বিক্রয়মুখী হবে।
-
-Customer Name: {$user->name}
-Customer Phone: {$user->phone}
-Customer Message: {$message}
-
-FAQ Data:
-{$faqContext}
-
-Product Data:
-{$productContext}
-PROMPT;
     }
 
     private function formatChat(Chat $chat): array
@@ -281,23 +172,6 @@ PROMPT;
                     'convertion_message' => $validated['message'],
                 ]);
 
-                $directFaqAnswer = $this->findFaqAnswerByKeyword($validated['message']);
-                $replyMessage = $directFaqAnswer;
-
-                if (! $replyMessage) {
-                    $aiPrompt = $this->buildAiPrompt($user, $validated['message']);
-                    $aiResponse = active_ai_response($aiPrompt);
-                    $replyMessage = $aiResponse['success']
-                        ? $aiResponse['message']
-                        : 'AI assistant is currently unavailable. Please wait for a support reply.';
-                }
-
-                $chat->conversions()->create([
-                    'user_id' => $user->id,
-                    'sender_type' => 'ai',
-                    'convertion_message' => $replyMessage,
-                ]);
-
                 $chat->update([
                     'status' => 'open',
                     'last_message_at' => now(),
@@ -309,13 +183,19 @@ PROMPT;
                     'customer_phone' => $user->phone,
                 ]);
 
-                return $chat->fresh(['user', 'conversions.user', 'conversions.admin']);
+                return [
+                    'chat' => $chat->fresh(['user', 'conversions.user', 'conversions.admin']),
+                    'user_id' => $user->id,
+                    'message' => $validated['message'],
+                ];
             });
+
+            GenerateChatAiReplyJob::dispatch($payload['chat']->id, $payload['user_id'], $payload['message']);
 
             return response()->json(array_merge([
                 'success' => true,
-                'message' => 'Message sent successfully.',
-            ], $this->formatChat($payload)));
+                'message' => 'Message sent successfully. AI reply is being prepared.',
+            ], $this->formatChat($payload['chat'])));
         } catch (\Throwable $exception) {
             Log::error('Chat message store failed.', [
                 'message' => $exception->getMessage(),

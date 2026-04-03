@@ -48,5 +48,20 @@
             </table>
         </div>
     </div>
+
+    <div class="card mt-6">
+        <header class="card-header">
+            <p class="card-header-title">
+                <span class="icon"><i class="mdi mdi-timer-cog-outline"></i></span>
+                cPanel Cron Guide
+            </p>
+        </header>
+        <div class="card-content">
+            <p class="mb-3 text-sm text-gray-600">Use this cron command in cPanel so AI replies from chat widget and Facebook messages are processed every minute.</p>
+            <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-800">
+                * * * * * curl -s http://new.mjsorganic.xyz/queue-work
+            </div>
+        </div>
+    </div>
 </section>
 @endsection

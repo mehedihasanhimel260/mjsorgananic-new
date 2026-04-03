@@ -58,6 +58,7 @@ Route::get('/products/{product}', [FrontSiteController::class, 'show'])->name('p
 Route::get('/pages/{slug}', [SitePageController::class, 'show'])->name('pages.show');
 Route::get('/ref/{tracking_code}', [AffiliateTrackingController::class, 'handle'])->name('affiliate.track');
 Route::get('/schedule-run', [SteadfastController::class, 'runSchedule'])->name('steadfast.schedule-run');
+Route::get('/queue-work', [SteadfastController::class, 'runQueueWorker'])->name('queue.work');
 Route::get('/facebook/webhook', [FbWebhookController::class, 'verify'])->name('facebook.webhook.verify');
 Route::post('/facebook/webhook', [FbWebhookController::class, 'receive'])->name('facebook.webhook.receive');
 Route::post('/visitor/ping', [OrderController::class, 'visitorPing'])->name('visitor.ping');

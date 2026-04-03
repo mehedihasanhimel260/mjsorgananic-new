@@ -55,4 +55,18 @@ class SteadfastController extends Controller
             'output' => trim(Artisan::output()),
         ]);
     }
+
+    public function runQueueWorker()
+    {
+        Artisan::call('queue:work', [
+            '--stop-when-empty' => true,
+            '--queue' => 'default',
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Queue worker completed.',
+            'output' => trim(Artisan::output()),
+        ]);
+    }
 }
