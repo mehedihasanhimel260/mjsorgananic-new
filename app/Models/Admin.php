@@ -12,9 +12,6 @@ class Admin extends Authenticatable
 
     protected $table = 'admins';
 
-    /**
-     * Mass assignable fields
-     */
     protected $fillable = [
         'name',
         'email',
@@ -22,17 +19,11 @@ class Admin extends Authenticatable
         'password',
     ];
 
-    /**
-     * Hidden fields
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Casts
-     */
     protected function casts(): array
     {
         return [
@@ -43,5 +34,37 @@ class Admin extends Authenticatable
     public function conversions()
     {
         return $this->hasMany(Conversion::class);
+    }
+
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'admin_roles')->with('permissions')->withTimestamps();
+    }
+
+    public function permissions()
+    {
+        return $this->roles->flatMap->permissions->unique('id')->values();
+    }
+
+    public function hasPermission(string $permissionSlug): bool
+    {
+        if (! $this->relationLoaded('roles')) {
+            $this->load('roles.permissions');
+        }
+
+        if ($this->roles->isEmpty()) {
+            return true;
+        }
+
+        return $this->permissions()->contains(fn ($permission) => $permission->slug === $permissionSlug);
+    }
+
+    public function hasRole(string $roleSlug): bool
+    {
+        if (! $this->relationLoaded('roles')) {
+            $this->load('roles');
+        }
+
+        return $this->roles->contains(fn ($role) => $role->slug === $roleSlug);
     }
 }

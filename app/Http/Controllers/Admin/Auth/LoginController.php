@@ -7,6 +7,7 @@ use App\Models\AffiliateCommission;
 use App\Models\AffiliateWalletTransaction;
 use App\Models\Chat;
 use App\Models\DeliveryChargeSetting;
+use App\Models\Admin;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductStockBatch;
@@ -41,7 +42,10 @@ class LoginController extends Controller
 
         if (Auth::guard('admin')->attempt($credentials, $remember)) {
             $request->session()->regenerate();
-            return redirect()->route('admin.dashboard');
+            /** @var Admin $admin */
+            $admin = Auth::guard('admin')->user();
+
+            return redirect()->route($this->resolveRedirectRoute($admin));
         }
 
         return back()
@@ -186,5 +190,28 @@ class LoginController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('admin.login');
+    }
+
+    private function resolveRedirectRoute(Admin $admin): string
+    {
+        $routePermissionMap = [
+            'admin.dashboard' => 'dashboard.view',
+            'admin.products.index' => 'products.manage',
+            'admin.orders.index' => 'orders.manage',
+            'admin.users.index' => 'users.manage',
+            'admin.affiliates.index' => 'affiliates.manage',
+            'admin.chats.index' => 'chats.manage',
+            'admin.faqs.index' => 'faqs.manage',
+            'admin.site-settings.general' => 'settings.manage',
+            'admin.roles.index' => 'access-control.manage',
+        ];
+
+        foreach ($routePermissionMap as $routeName => $permission) {
+            if ($admin->hasPermission($permission)) {
+                return $routeName;
+            }
+        }
+
+        return 'admin.login';
     }
 }
