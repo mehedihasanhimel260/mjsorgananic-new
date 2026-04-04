@@ -25,7 +25,7 @@
                             <th>Total</th>
                             <th>Order Status</th>
                             <th>Products</th>
-                            <th>Quantity</th>
+                            <th>Consignment ID</th>
                             <th>Affiliate</th>
                             <th>Created</th>
                             <th>View</th>
@@ -51,9 +51,13 @@
                                 <td data-label="Total">{{ $order->total_amount }}</td>
                                 <td data-label="Order Status">{{ $order->order_status ?? 'Pending' }}</td>
                                 <td data-label="Products">
-                                    {{ $order->items->pluck('product.name')->filter()->join(', ') ?: 'N/A' }}
+                                    @if($order->items->isNotEmpty())
+                                        {{ $order->items->map(fn($item) => ($item->product?->name ?? 'Product').' '.$item->quantity.'pcs')->join(', ') }}
+                                    @else
+                                        N/A
+                                    @endif
                                 </td>
-                                <td data-label="Quantity">{{ $order->items->sum('quantity') }}</td>
+                                <td data-label="Consignment ID">{{ data_get($order->courier_api_response, 'consignment.consignment_id', 'N/A') }}</td>
                                 <td data-label="Affiliate">{{ $order->affiliate?->name ?? 'Direct' }}</td>
                                 <td data-label="Created">
                                     <small class="text-gray-500"
