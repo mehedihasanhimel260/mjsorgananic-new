@@ -231,7 +231,7 @@
                         <td>{{ $order->user?->phone ?? 'N/A' }}</td>
                         <td>
                             @if($order->track_id)
-                                <a href="https://steadfast.com.bd/t/{{ $order->track_id }}" target="_blank" class="text-blue-600 hover:underline">
+                                <a href="{{ data_get($order->courier_api_response, 'consignment.tracking_link', 'https://steadfast.com.bd/t/'.$order->track_id) }}" target="_blank" class="text-blue-600 hover:underline">
                                     {{ $order->track_id }}
                                 </a>
                             @else

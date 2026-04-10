@@ -20,6 +20,10 @@ class AuthController extends Controller
 
     public function showLoginForm()
     {
+        if (Auth::guard('affiliate')->check()) {
+            return redirect()->route('affiliates.dashboard');
+        }
+
         return view('affiliates.auth.login');
     }
 

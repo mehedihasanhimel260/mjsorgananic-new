@@ -26,6 +26,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'phone' => ['required', 'string', 'max:20', Rule::unique('users', 'phone')->ignore($user->id)],
+            'alternative_phone' => ['nullable', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'ip_address' => 'nullable|string|max:45',
             'ip_division' => 'nullable|string|max:255',

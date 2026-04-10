@@ -21,6 +21,13 @@ class LoginController extends Controller
 {
     public function showLoginForm()
     {
+        if (Auth::guard('admin')->check()) {
+            /** @var Admin $admin */
+            $admin = Auth::guard('admin')->user();
+
+            return redirect()->route($this->resolveRedirectRoute($admin));
+        }
+
         return view('admin.auth.login');
     }
 

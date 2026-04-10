@@ -21,6 +21,7 @@ class User extends Authenticatable
         'name',
         'email',
         'phone',
+        'alternative_phone',
         'PSID_OF_USER',
         'password',
         'location_permission',

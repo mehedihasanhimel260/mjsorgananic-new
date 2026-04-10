@@ -21,10 +21,18 @@
                     </div>
                 </div>
 
-                <div class="field">
-                    <label class="label">Phone</label>
-                    <div class="control">
-                        <input class="input" type="text" name="phone" value="{{ old('phone', $user->phone) }}" required>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="field">
+                        <label class="label">Phone</label>
+                        <div class="control">
+                            <input class="input" type="text" name="phone" value="{{ old('phone', $user->phone) }}" required>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Alternative Phone</label>
+                        <div class="control">
+                            <input class="input" type="text" name="alternative_phone" value="{{ old('alternative_phone', $user->alternative_phone) }}">
+                        </div>
                     </div>
                 </div>
 

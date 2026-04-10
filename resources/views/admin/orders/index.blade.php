@@ -38,9 +38,9 @@
                                 <td data-label="Order No">{{ $order->order_number }}</td>
                                 <td data-label="Customer">{{ $order->user?->name ?? 'N/A' }}</td>
                                 <td data-label="Phone">{{ $order->user?->phone ?? 'N/A' }}</td>
-                                <td data-label="Type">
+                                <td data-label="Track ID">
                                     @if ($order->track_id)
-                                        <a href="https://steadfast.com.bd/t/{{ $order->track_id }}" target="_blank"
+                                        <a href="{{ data_get($order->courier_api_response, 'consignment.tracking_link', 'https://steadfast.com.bd/t/'.$order->track_id) }}" target="_blank"
                                             class="text-blue-600 hover:underline">
                                             {{ $order->track_id }}
                                         </a>

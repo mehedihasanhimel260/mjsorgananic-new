@@ -49,7 +49,7 @@
                         </td>
                         <td>
                             @if($order->track_id)
-                                <a href="https://steadfast.com.bd/t/{{ $order->track_id }}" target="_blank" class="text-blue-600 hover:underline font-semibold">
+                                <a href="{{ data_get($order->courier_api_response, 'consignment.tracking_link', 'https://steadfast.com.bd/t/'.$order->track_id) }}" target="_blank" class="text-blue-600 hover:underline font-semibold">
                                     {{ $order->track_id }}
                                 </a>
                             @else
