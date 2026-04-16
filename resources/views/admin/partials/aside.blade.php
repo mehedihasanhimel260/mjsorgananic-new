@@ -91,6 +91,7 @@
                     <li><a href="{{ route('admin.site-settings.footer') }}"><span>Footer Settings</span></a></li>
                     <li><a href="{{ route('admin.site-settings.pages.index') }}"><span>Page Settings</span></a></li>
                     <li><a href="{{ route('admin.seo-settings.index') }}"><span>SEO Settings</span></a></li>
+                    <li><a href="{{ route('admin.sms-settings.index') }}"><span>SMS Marketing</span></a></li>
                     <li><a href="{{ route('admin.fb-settings.index') }}"><span>FB Settings</span></a></li>
                     <li><a href="{{ route('admin.ai-settings.index') }}"><span>AI Settings</span></a></li>
                     <li><a href="{{ route('admin.steadfast.index') }}"><span>Courier Settings</span></a></li>
@@ -112,6 +113,15 @@
         <p class="menu-label">About</p>
         <ul class="menu-list">
             <li><a href="#" class="has-icon"><span class="icon"><i class="mdi mdi-information-outline"></i></span><span class="menu-item-label">About</span></a></li>
+            <li>
+                <form method="POST" action="{{ route('admin.maintenance.clear') }}" onsubmit="return confirm('This will clear cache and current browser session data. Continue?');">
+                    @csrf
+                    <button type="submit" class="has-icon w-full flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-left text-red-700 hover:bg-red-100">
+                        <span class="icon"><i class="mdi mdi-broom"></i></span>
+                        <span class="menu-item-label">Clear App Data</span>
+                    </button>
+                </form>
+            </li>
         </ul>
     </div>
 </aside>

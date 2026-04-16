@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AccountController as AdminAccountController;
+use App\Http\Controllers\Admin\AdminMaintenanceController;
 use App\Http\Controllers\Admin\AdminManagerController;
 use App\Http\Controllers\Admin\AffiliateController as AdminAffiliateController;
 use App\Http\Controllers\Admin\AffiliateWithdrawController as AdminAffiliateWithdrawController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\Admin\SeoSettingController;
 use App\Http\Controllers\Admin\SiteMenuController;
 use App\Http\Controllers\Admin\SitePageController as AdminSitePageController;
 use App\Http\Controllers\Admin\SiteSettingController;
+use App\Http\Controllers\Admin\SmsMarketingController;
 use App\Http\Controllers\Admin\SteadfastController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
@@ -33,6 +35,8 @@ Route::prefix('admin')
         Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
         Route::middleware('auth:admin')->group(function () {
+            Route::post('/maintenance/clear', [AdminMaintenanceController::class, 'clearApplicationData'])->name('maintenance.clear');
+
             Route::get('/dashboard', [LoginController::class, 'dashboard'])
                 ->middleware('admin.permission:dashboard.view')
                 ->name('dashboard');
@@ -109,6 +113,14 @@ Route::prefix('admin')
                 Route::post('fb-settings', [FbSettingController::class, 'update'])->name('fb-settings.update');
                 Route::get('seo-settings', [SeoSettingController::class, 'index'])->name('seo-settings.index');
                 Route::post('seo-settings', [SeoSettingController::class, 'update'])->name('seo-settings.update');
+                Route::get('sms-settings', [SmsMarketingController::class, 'index'])->name('sms-settings.index');
+                Route::post('sms-settings', [SmsMarketingController::class, 'update'])->name('sms-settings.update');
+                Route::post('sms-settings/refresh-balance', [SmsMarketingController::class, 'refreshBalance'])->name('sms-settings.refresh-balance');
+                Route::post('sms-settings/send-bulk', [SmsMarketingController::class, 'sendBulk'])->name('sms-settings.send-bulk');
+                Route::post('sms-settings/send-single', [SmsMarketingController::class, 'sendSingle'])->name('sms-settings.send-single');
+                Route::post('sms-settings/templates', [SmsMarketingController::class, 'storeTemplate'])->name('sms-settings.templates.store');
+                Route::patch('sms-settings/templates/{smsTemplate}', [SmsMarketingController::class, 'updateTemplate'])->name('sms-settings.templates.update');
+                Route::delete('sms-settings/templates/{smsTemplate}', [SmsMarketingController::class, 'destroyTemplate'])->name('sms-settings.templates.destroy');
                 Route::get('site-settings/general', [SiteSettingController::class, 'index'])->name('site-settings.general');
                 Route::post('site-settings/general', [SiteSettingController::class, 'update'])->name('site-settings.general.update');
                 Route::get('site-settings/footer', [SiteSettingController::class, 'footer'])->name('site-settings.footer');

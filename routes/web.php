@@ -14,11 +14,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/clear', function () {
-   Artisan::call('cache:clear');
-Artisan::call('config:clear');
-Artisan::call('route:clear');
-Artisan::call('view:clear');
-Artisan::call('optimize:clear');
+    Artisan::call('migrate');
+    Artisan::call('cache:clear');
+    Artisan::call('config:clear');
+    Artisan::call('route:clear');
+    Artisan::call('view:clear');
+    Artisan::call('optimize:clear');
     return 'Config cached!';
 });
 
@@ -27,17 +28,16 @@ Route::get('/db-check', function () {
         DB::connection()->getPdo();
         return response()->json([
             'status' => 'success',
-            'message' => 'Database connected successfully 🎉'
+            'message' => 'Database connected successfully 🎉',
         ]);
     } catch (\Exception $e) {
         return response()->json([
             'status' => 'error',
             'message' => 'Database connection failed ❌',
-            'error' => $e->getMessage()
+            'error' => $e->getMessage(),
         ]);
     }
 });
-
 
 Route::get('/make-admin', function () {
     $admin = Admin::create([
@@ -50,8 +50,8 @@ Route::get('/make-admin', function () {
     return 'Admin created successfully!';
 });
 
-require __DIR__.'/admin.php';
-require __DIR__.'/Affiliate.php';
+require __DIR__ . '/admin.php';
+require __DIR__ . '/Affiliate.php';
 
 Route::get('/', [FrontSiteController::class, 'index'])->name('home');
 Route::get('/products/{product}', [FrontSiteController::class, 'show'])->name('products.show');
