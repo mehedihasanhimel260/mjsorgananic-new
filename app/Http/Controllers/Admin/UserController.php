@@ -9,11 +9,19 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::latest()->paginate(20);
+        $search = preg_replace('/\D+/', '', (string) $request->query('phone_search'));
 
-        return view('admin.users.index', compact('users'));
+        $users = User::query()
+            ->when(strlen($search) > 4, function ($query) use ($search) {
+                $query->where('phone', 'like', '%'.$search.'%');
+            })
+            ->latest()
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('admin.users.index', compact('users', 'search'));
     }
 
     public function edit(User $user)

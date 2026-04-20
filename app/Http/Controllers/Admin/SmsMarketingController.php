@@ -3,28 +3,33 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\SendBulkSmsJob;
 use App\Jobs\SendSingleSmsJob;
+use App\Models\SmsCampaign;
 use App\Models\SmsLog;
 use App\Models\SmsTemplate;
 use App\Models\User;
+use App\Services\SmsCampaignService;
 use App\Services\SmsGatewayService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SmsMarketingController extends Controller
 {
-    public function __construct(private readonly SmsGatewayService $smsGatewayService)
-    {
+    public function __construct(
+        private readonly SmsGatewayService $smsGatewayService,
+        private readonly SmsCampaignService $smsCampaignService,
+    ) {
     }
 
     public function index()
     {
         $setting = $this->smsGatewayService->getSetting();
-        $logs = SmsLog::with(['user', 'admin'])->latest()->take(50)->get();
+        $logs = SmsLog::with(['user', 'admin'])->latest()->paginate(20, ['*'], 'history_page');
         $templates = SmsTemplate::query()->latest()->get();
+        $campaigns = SmsCampaign::query()->latest()->take(12)->get();
         $userCount = User::query()->whereNotNull('phone')->count();
 
-        return view('admin.sms-settings.index', compact('setting', 'logs', 'templates', 'userCount'));
+        return view('admin.sms-settings.index', compact('setting', 'logs', 'templates', 'campaigns', 'userCount'));
     }
 
     public function update(Request $request)
@@ -55,9 +60,20 @@ class SmsMarketingController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'message' => 'required|string',
+            'is_weekly_active' => 'nullable|boolean',
         ]);
 
-        SmsTemplate::query()->create($validated);
+        DB::transaction(function () use ($validated) {
+            if (! empty($validated['is_weekly_active'])) {
+                SmsTemplate::query()->update(['is_weekly_active' => false]);
+            }
+
+            SmsTemplate::query()->create([
+                'title' => $validated['title'],
+                'message' => $validated['message'],
+                'is_weekly_active' => ! empty($validated['is_weekly_active']),
+            ]);
+        });
 
         return redirect()->route('admin.sms-settings.index')->with('success', 'SMS template saved successfully.');
     }
@@ -67,9 +83,20 @@ class SmsMarketingController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'message' => 'required|string',
+            'is_weekly_active' => 'nullable|boolean',
         ]);
 
-        $smsTemplate->update($validated);
+        DB::transaction(function () use ($validated, $smsTemplate) {
+            if (! empty($validated['is_weekly_active'])) {
+                SmsTemplate::query()->whereKeyNot($smsTemplate->id)->update(['is_weekly_active' => false]);
+            }
+
+            $smsTemplate->update([
+                'title' => $validated['title'],
+                'message' => $validated['message'],
+                'is_weekly_active' => ! empty($validated['is_weekly_active']),
+            ]);
+        });
 
         return redirect()->route('admin.sms-settings.index')->with('success', 'SMS template updated successfully.');
     }
@@ -79,6 +106,16 @@ class SmsMarketingController extends Controller
         $smsTemplate->delete();
 
         return redirect()->route('admin.sms-settings.index')->with('success', 'SMS template deleted successfully.');
+    }
+
+    public function activateTemplate(SmsTemplate $smsTemplate)
+    {
+        DB::transaction(function () use ($smsTemplate) {
+            SmsTemplate::query()->update(['is_weekly_active' => false]);
+            $smsTemplate->update(['is_weekly_active' => true]);
+        });
+
+        return redirect()->route('admin.sms-settings.index')->with('success', 'Weekly SMS active template updated successfully.');
     }
 
     public function sendSingle(Request $request)
@@ -123,53 +160,27 @@ class SmsMarketingController extends Controller
         return redirect()->route('admin.sms-settings.index')->with('success', 'Single SMS queued successfully.');
     }
 
-    public function sendBulk(Request $request)
+    public function sendBulk()
     {
-        $validated = $request->validate([
-            'bulk_message' => 'nullable|string',
-            'bulk_template_id' => 'nullable|integer|exists:sms_templates,id',
-        ]);
+        $campaign = $this->smsCampaignService->createWeeklyCampaign();
 
-        $message = $this->resolveMessageFromTemplate($validated['bulk_template_id'] ?? null, $validated['bulk_message'] ?? null);
+        if (! $campaign) {
+            $campaign = SmsCampaign::query()
+                ->where('campaign_type', 'weekly')
+                ->where('week_key', $this->smsCampaignService->currentWeekKey())
+                ->latest()
+                ->first();
 
-        if ($message === null) {
-            return back()->with('error', 'Please write a message or select a saved template.')->withInput();
-        }
-
-        $setting = $this->smsGatewayService->getSetting();
-        $setting->update([
-            'last_bulk_message' => $message,
-        ]);
-
-        $users = User::query()->select('id', 'phone')->whereNotNull('phone')->get();
-        $recipients = [];
-        $seenPhones = [];
-
-        foreach ($users as $user) {
-            $normalizedPhone = $this->smsGatewayService->normalizePhone($user->phone);
-
-            if (! $normalizedPhone || isset($seenPhones[$normalizedPhone])) {
-                continue;
+            if (! $campaign) {
+                return back()->with('error', 'Please activate one weekly SMS template first.');
             }
-
-            $seenPhones[$normalizedPhone] = true;
-            $recipients[] = [
-                'phone' => $normalizedPhone,
-                'user_id' => $user->id,
-            ];
         }
 
-        if ($recipients === []) {
-            return back()->with('error', 'No valid user phone number found for bulk SMS.');
-        }
+        $jobs = $this->smsCampaignService->dispatchCampaignBatches($campaign);
 
-        SendBulkSmsJob::dispatch(
-            recipients: $recipients,
-            message: $message,
-            sentByAdminId: auth()->guard('admin')->id(),
-        );
-
-        return redirect()->route('admin.sms-settings.index')->with('success', 'Bulk SMS queued successfully for '.count($recipients).' users.');
+        return redirect()->route('admin.sms-settings.index')->with('success', $jobs > 0
+            ? 'Weekly SMS campaign dispatched successfully.'
+            : 'Weekly campaign already completed or no valid recipients found.');
     }
 
     private function resolveMessageFromTemplate(?int $templateId, ?string $message): ?string

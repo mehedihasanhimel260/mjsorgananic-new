@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('steadfast:sync-status')->everySixHours();
+Schedule::command('sms:dispatch-weekly-campaign')->weeklyOn(5, '10:00')->timezone('Asia/Dhaka');

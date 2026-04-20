@@ -91,14 +91,29 @@ class OrderController extends Controller
         ]);
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $orders = Order::with(['user', 'affiliate', 'items.product'])
-            ->orderByRaw("CASE WHEN order_status IS NULL OR order_status = 'pending' THEN 0 ELSE 1 END")
-            ->latest()
-            ->get();
+        $phoneSearch = trim((string) $request->query('phone_search'));
 
-        return view('admin.orders.index', compact('orders'));
+        $orders = Order::with(['user', 'affiliate', 'items.product'])
+            ->when($phoneSearch !== '', function ($query) use ($phoneSearch) {
+                $query->whereHas('user', function ($userQuery) use ($phoneSearch) {
+                    $userQuery->where('phone', 'like', '%'.$phoneSearch.'%');
+                });
+            })
+            ->orderByRaw("
+                CASE
+                    WHEN order_status IS NULL THEN 0
+                    WHEN order_status = 'in_review' THEN 1
+                    WHEN order_status = 'pending' THEN 2
+                    ELSE 3
+                END
+            ")
+            ->orderByDesc('created_at')
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('admin.orders.index', compact('orders', 'phoneSearch'));
     }
 
     public function show(Order $order)

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Http;
 class SmsGatewayService
 {
     private const SEND_URL = 'https://api.mimsms.com/api/SmsSending/SMS';
+    private const BULK_SEND_URL = 'https://api.mimsms.com/api/SmsSending/OneToMany';
     private const BALANCE_URL = 'https://api.mimsms.com/api/SmsSending/balanceCheck';
 
     public function getSetting(): SmsSetting
@@ -101,6 +102,54 @@ class SmsGatewayService
 
     public function sendSms(string $phone, string $message): array
     {
+        $normalizedPhone = $this->normalizePhone($phone);
+
+        if (! $normalizedPhone) {
+            return [
+                'success' => false,
+                'code' => '206',
+                'status_text' => 'Invalid Mobile Number',
+                'raw_response' => 'Invalid number format.',
+                'phone' => null,
+                'transaction_id' => null,
+            ];
+        }
+
+        return $this->sendRequest(self::SEND_URL, [
+            'MobileNumber' => $normalizedPhone,
+            'Message' => $message,
+        ], $normalizedPhone);
+    }
+
+    public function sendBulkSms(string $phones, string $message): array
+    {
+        return $this->sendRequest(self::BULK_SEND_URL, [
+            'MobileNumber' => $phones,
+            'Message' => $message,
+        ], $phones);
+    }
+
+    public function statusText(?string $code): string
+    {
+        return match ($code) {
+            '200' => 'SMS submitted successfully',
+            '205' => 'Invalid Message Content',
+            '206' => 'Invalid Mobile Number',
+            '207' => 'Invalid Transaction Type',
+            '208' => 'Invalid Sender ID',
+            '209' => 'SMS Length cross the Max level',
+            '210' => 'Invalid CampaignId',
+            '213' => 'Parameter Mismatch',
+            '216' => 'Insufficient Balance',
+            '221' => 'SMS Sending Failed',
+            '401' => 'Unauthorized request',
+            '500' => 'MiMSMS internal error',
+            default => 'Unknown gateway response',
+        };
+    }
+
+    private function sendRequest(string $url, array $payload, string $phone): array
+    {
         $setting = $this->getSetting();
 
         if (blank($setting->username) || blank($setting->api_key) || blank($setting->sender_id)) {
@@ -109,31 +158,23 @@ class SmsGatewayService
                 'code' => null,
                 'status_text' => 'SMS Username, API Key, and Sender Name are required.',
                 'raw_response' => null,
+                'phone' => $phone,
+                'transaction_id' => null,
             ];
         }
 
-        $normalizedPhone = $this->normalizePhone($phone);
-
-        if (! $normalizedPhone) {
-            return [
-                'success' => false,
-                'code' => '1001',
-                'status_text' => $this->statusText('1001'),
-                'raw_response' => 'Invalid number format.',
-            ];
-        }
+        $body = [
+            'UserName' => $setting->username,
+            'Apikey' => $setting->api_key,
+            'CampaignId' => null,
+            'SenderName' => $setting->sender_id,
+            'TransactionType' => $setting->transaction_type ?: 'T',
+        ] + $payload;
 
         $response = Http::asJson()
-            ->timeout(30)
+            ->timeout(60)
             ->withoutVerifying()
-            ->post(self::SEND_URL, [
-                'UserName' => $setting->username,
-                'Apikey' => $setting->api_key,
-                'MobileNumber' => $normalizedPhone,
-                'SenderName' => $setting->sender_id,
-                'TransactionType' => $setting->transaction_type ?: 'T',
-                'Message' => $message,
-            ]);
+            ->post($url, $body);
 
         $rawBody = trim((string) $response->body());
         $decoded = json_decode($rawBody, true);
@@ -145,25 +186,9 @@ class SmsGatewayService
             'code' => $code,
             'status_text' => $statusText,
             'raw_response' => $rawBody,
-            'phone' => $normalizedPhone,
+            'phone' => $phone,
+            'transaction_id' => is_array($decoded) ? ($decoded['trxnId'] ?? null) : null,
         ];
-    }
-
-    public function statusText(?string $code): string
-    {
-        return match ($code) {
-            '1001' => 'Invalid Number',
-            '200' => 'SMS submitted successfully',
-            '201' => 'SMS submitted successfully',
-            '202' => 'SMS submitted successfully',
-            '400' => 'Bad request',
-            '401' => 'Authentication failed',
-            '403' => 'Gateway rejected the request',
-            '404' => 'MiMSMS endpoint not found',
-            '422' => 'Request validation failed',
-            '500' => 'MiMSMS internal error',
-            default => 'Unknown gateway response',
-        };
     }
 
     private function extractBalance(mixed $decoded, string $rawBody): ?float
@@ -227,6 +252,6 @@ class SmsGatewayService
             return true;
         }
 
-        return in_array($code, ['200', '201', '202'], true);
+        return $code === '200';
     }
 }

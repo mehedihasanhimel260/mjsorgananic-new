@@ -12,5 +12,18 @@ class SmsTemplate extends Model
     protected $fillable = [
         'title',
         'message',
+        'is_weekly_active',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_weekly_active' => 'boolean',
+        ];
+    }
+
+    public function campaigns()
+    {
+        return $this->hasMany(SmsCampaign::class);
+    }
 }

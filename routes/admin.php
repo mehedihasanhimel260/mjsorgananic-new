@@ -120,6 +120,7 @@ Route::prefix('admin')
                 Route::post('sms-settings/send-single', [SmsMarketingController::class, 'sendSingle'])->name('sms-settings.send-single');
                 Route::post('sms-settings/templates', [SmsMarketingController::class, 'storeTemplate'])->name('sms-settings.templates.store');
                 Route::patch('sms-settings/templates/{smsTemplate}', [SmsMarketingController::class, 'updateTemplate'])->name('sms-settings.templates.update');
+                Route::match(['post', 'patch'], 'sms-settings/templates/{smsTemplate}/activate', [SmsMarketingController::class, 'activateTemplate'])->name('sms-settings.templates.activate');
                 Route::delete('sms-settings/templates/{smsTemplate}', [SmsMarketingController::class, 'destroyTemplate'])->name('sms-settings.templates.destroy');
                 Route::get('site-settings/general', [SiteSettingController::class, 'index'])->name('site-settings.general');
                 Route::post('site-settings/general', [SiteSettingController::class, 'update'])->name('site-settings.general.update');
