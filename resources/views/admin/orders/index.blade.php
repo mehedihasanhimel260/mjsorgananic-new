@@ -160,7 +160,13 @@
                                 </td>
                                 <td data-label="Courier">
                                     <div class="space-y-1">
-                                        <p class="text-sm font-semibold text-slate-700">{{ $order->track_id ?? 'Track ID N/A' }}</p>
+                                        @if($order->track_id)
+                                            <a href="{{ data_get($order->courier_api_response, 'consignment.tracking_link', 'https://steadfast.com.bd/t/'.$order->track_id) }}" target="_blank" rel="noopener noreferrer" class="text-sm font-semibold text-blue-600 hover:underline">
+                                                {{ $order->track_id }}
+                                            </a>
+                                        @else
+                                            <p class="text-sm font-semibold text-slate-700">Track ID N/A</p>
+                                        @endif
                                         <p class="text-xs text-slate-400">Parcel ID: {{ data_get($order->courier_api_response, 'consignment.consignment_id', 'N/A') }}</p>
                                     </div>
                                 </td>
@@ -224,7 +230,13 @@
                             </div>
                             <div>
                                 <p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Track ID</p>
-                                <p class="mt-1 text-slate-700">{{ $order->track_id ?? 'N/A' }}</p>
+                                @if($order->track_id)
+                                    <a href="{{ data_get($order->courier_api_response, 'consignment.tracking_link', 'https://steadfast.com.bd/t/'.$order->track_id) }}" target="_blank" rel="noopener noreferrer" class="mt-1 inline-block text-blue-600 hover:underline">
+                                        {{ $order->track_id }}
+                                    </a>
+                                @else
+                                    <p class="mt-1 text-slate-700">N/A</p>
+                                @endif
                             </div>
                             <div>
                                 <p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Consignment</p>
