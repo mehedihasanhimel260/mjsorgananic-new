@@ -169,14 +169,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function applyLocationPlaceholder() {
         if (visitorLocation.permission === 'granted') {
-            addressEl.placeholder = 'Location captured. Add full address if needed';
+            addressEl.placeholder = 'লোকেশন নেওয়া হয়েছে। প্রয়োজন হলে পূর্ণ ঠিকানা লিখুন';
             return;
         }
         if (visitorLocation.permission === 'denied') {
-            addressEl.placeholder = 'Location blocked. Please allow browser location or write your address manually';
+            addressEl.placeholder = 'লোকেশন বন্ধ আছে। ব্রাউজারে লোকেশন চালু করুন অথবা ঠিকানা লিখুন';
             return;
         }
-        addressEl.placeholder = 'Please write your full address here';
+        addressEl.placeholder = 'এখানে আপনার পূর্ণ ঠিকানা লিখুন';
     }
 
     async function pingVisitor() {
@@ -227,11 +227,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const phone = modalCustomerPhoneEl.value.trim();
 
         if (!name || !phone) {
-            updateVisitorStatus('Name and phone number are required.', true);
+            updateVisitorStatus('নাম এবং ফোন নম্বর দেওয়া আবশ্যক।', true);
             return false;
         }
 
-        updateVisitorStatus('Saving visitor information...');
+        updateVisitorStatus('তথ্য সংরক্ষণ করা হচ্ছে...');
 
         try {
             const response = await fetch('{{ route("visitor.register") }}', {
@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const result = await response.json();
 
             if (!response.ok || !result.success) {
-                updateVisitorStatus('Could not save visitor info. Please try again.', true);
+                updateVisitorStatus('ভিজিটরের তথ্য সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।', true);
                 return false;
             }
 
@@ -263,12 +263,12 @@ document.addEventListener('DOMContentLoaded', function () {
             checkoutNameEl.value = result.user.name;
             checkoutPhoneEl.value = result.user.phone;
             if (result.user.saved_address) addressEl.value = result.user.saved_address;
-            updateVisitorStatus(`Saved. IP: ${result.user.ip_address || visitorIp || 'N/A'}`);
+            updateVisitorStatus(`তথ্য সংরক্ষণ হয়েছে। IP: ${result.user.ip_address || visitorIp || 'N/A'}`);
             hideVisitorModal();
             return true;
         } catch (error) {
             console.error('Visitor registration failed.', error);
-            updateVisitorStatus('Server error. Please try again.', true);
+            updateVisitorStatus('সার্ভারে সমস্যা হয়েছে। আবার চেষ্টা করুন।', true);
             return false;
         }
     }
@@ -310,11 +310,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     checkoutPhoneEl.value = phone;
                 }
             } else {
-                alert('Something went wrong. Please try again.');
+                alert('কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।');
             }
         } catch (error) {
             console.error('There was a problem with the fetch operation:', error);
-            alert('Could not connect to the server. Please check your connection.');
+            alert('সার্ভারের সাথে সংযোগ করা যায়নি। ইন্টারনেট সংযোগ চেক করুন।');
         }
     }
 
@@ -341,11 +341,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 cart = result.cart;
                 renderCart();
             } else {
-                alert('Something went wrong. Please try again.');
+                alert('কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।');
             }
         } catch (error) {
             console.error('There was a problem with the fetch operation:', error);
-            alert('Could not connect to the server. Please check your connection.');
+            alert('সার্ভারের সাথে সংযোগ করা যায়নি। ইন্টারনেট সংযোগ চেক করুন।');
         }
     }
 
@@ -358,7 +358,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 pendingProductId = productId;
                 modalProductIdEl.value = productId;
                 showVisitorModal();
-                updateVisitorStatus('Please save your name and phone first.');
+                updateVisitorStatus('আগে আপনার নাম এবং ফোন নম্বর সংরক্ষণ করুন।');
                 return;
             }
 
@@ -372,7 +372,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 pendingProductId = focusedProductId;
                 modalProductIdEl.value = focusedProductId;
                 showVisitorModal();
-                updateVisitorStatus('Please save your name and phone first.');
+                updateVisitorStatus('আগে আপনার নাম এবং ফোন নম্বর সংরক্ষণ করুন।');
                 return;
             }
 
@@ -388,7 +388,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     modalCloseBtn.addEventListener('click', function () {
         if (!sessionCustomer.name || !sessionCustomer.phone) {
-            updateVisitorStatus('Save visitor information first to continue.', true);
+            updateVisitorStatus('চালিয়ে যেতে আগে ভিজিটর তথ্য সংরক্ষণ করুন।', true);
             return;
         }
         hideVisitorModal();
@@ -413,8 +413,7 @@ document.addEventListener('DOMContentLoaded', function () {
             renderCart();
 
             if (!sessionCustomer.name || !sessionCustomer.phone) {
-                updateVisitorStatus('Enter visitor name and phone to save visit log.');
-                showVisitorModal();
+                updateVisitorStatus('অর্ডার করার সময় আগে আপনার নাম এবং ফোন নম্বর সংরক্ষণ করুন।');
             }
         } catch (error) {
             console.error('Could not load cart.', error);

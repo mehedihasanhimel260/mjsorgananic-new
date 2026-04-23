@@ -27,7 +27,7 @@
           <button
             data-product-id="{{ $product['id'] }}"
             class="add-to-cart-btn w-full bg-green-700 text-white py-2 rounded-lg hover:bg-green-800">
-            Order Now
+            অর্ডার করুন
           </button>
         </div>
       </div>

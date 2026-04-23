@@ -11,16 +11,16 @@
     </div>
 
     <div class="bg-white rounded-2xl shadow p-6 lg:p-8">
-      <p class="text-sm font-semibold tracking-[0.2em] text-green-700 uppercase mb-3">Product Details</p>
+      <p class="text-sm font-semibold tracking-[0.2em] text-green-700 uppercase mb-3">পণ্যের বিবরণ</p>
       <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-3">{{ $product['name'] }}</h1>
       <p class="text-2xl font-bold text-green-700 mb-4">Tk {{ $product['price'] }}</p>
 
       @if(!empty($product['sku']))
-        <p class="text-sm text-gray-500 mb-2">SKU: {{ $product['sku'] }}</p>
+        <p class="text-sm text-gray-500 mb-2">এসকেইউ: {{ $product['sku'] }}</p>
       @endif
 
       @if(!empty($product['keywords']))
-        <p class="text-sm text-gray-500 mb-4">Keywords: {{ $product['keywords'] }}</p>
+        <p class="text-sm text-gray-500 mb-4">কীওয়ার্ড: {{ $product['keywords'] }}</p>
       @endif
 
       <div class="prose max-w-none text-gray-700 mb-6">
@@ -36,7 +36,7 @@
             <div id="long-desc-preview" class="text-gray-700 leading-7">{{ $previewText }}</div>
             <div id="long-desc-full" class="text-gray-700 leading-7 hidden">{!! $product['long_desc'] !!}</div>
             <button id="read-more-btn" type="button" class="mt-3 inline-flex items-center text-sm font-semibold text-green-700 hover:text-green-800">
-              Read More
+              আরও দেখুন
             </button>
           @else
             <div class="text-gray-700 leading-7">{!! $product['long_desc'] !!}</div>
@@ -49,9 +49,9 @@
           id="detail-order-btn"
           data-product-id="{{ $product['id'] }}"
           class="w-full bg-green-700 text-white py-3 rounded-xl hover:bg-green-800 font-semibold">
-          Order This Product
+          এই পণ্যটি অর্ডার করুন
         </button>
-        <p class="text-sm text-gray-500">Click order to add this product to cart and complete checkout from this page.</p>
+        <p class="text-sm text-gray-500">অর্ডার বাটনে ক্লিক করলে পণ্যটি কার্টে যোগ হবে এবং এই পেজ থেকেই চেকআউট সম্পন্ন করতে পারবেন।</p>
       </div>
     </div>
   </div>
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             longDescFullEl.classList.toggle('hidden');
             longDescPreviewEl.classList.toggle('hidden');
-            readMoreBtn.textContent = isHidden ? 'Read Less' : 'Read More';
+            readMoreBtn.textContent = isHidden ? 'কম দেখুন' : 'আরও দেখুন';
         });
     }
 });
