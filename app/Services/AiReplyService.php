@@ -10,7 +10,7 @@ class AiReplyService
 {
     public function generateReply(User $user, string $message): string
     {
-        $directFaqAnswer = $this->findFaqAnswerByKeyword($message);
+        $directFaqAnswer = $this->findFaqAnswer($message);
 
         if ($directFaqAnswer) {
             return $directFaqAnswer;
@@ -18,10 +18,13 @@ class AiReplyService
 
         $aiPrompt = $this->buildAiPrompt($user, $message);
         $aiResponse = active_ai_response($aiPrompt);
-
-        return $aiResponse['success']
+        $reply = $aiResponse['success']
             ? $aiResponse['message']
             : $this->fallbackMessage();
+
+        $this->storePendingFaq($message, $reply);
+
+        return $reply;
     }
 
     public function fallbackMessage(): string
@@ -36,7 +39,7 @@ class AiReplyService
         return trim(preg_replace('/\s+/', ' ', $normalized ?? ''));
     }
 
-    private function findFaqAnswerByKeyword(string $message): ?string
+    private function findFaqAnswer(string $message): ?string
     {
         $normalizedMessage = $this->normalizeMessageForKeywordMatch($message);
 
@@ -45,11 +48,24 @@ class AiReplyService
         }
 
         $faqs = Faq::query()
-            ->select('question', 'answer', 'keyword')
+            ->select('question', 'answer', 'keyword', 'status')
+            ->where('status', Faq::STATUS_ACTIVE)
             ->latest()
             ->get();
 
         foreach ($faqs as $faq) {
+            $normalizedQuestion = $this->normalizeMessageForKeywordMatch($faq->question);
+
+            if (
+                $normalizedQuestion !== ''
+                && (
+                    str_contains($normalizedMessage, $normalizedQuestion)
+                    || str_contains($normalizedQuestion, $normalizedMessage)
+                )
+            ) {
+                return $faq->answer;
+            }
+
             foreach ($faq->keyword_list as $keyword) {
                 $normalizedKeyword = $this->normalizeMessageForKeywordMatch($keyword);
 
@@ -62,10 +78,43 @@ class AiReplyService
         return null;
     }
 
+    private function storePendingFaq(string $message, string $reply): void
+    {
+        $normalizedMessage = $this->normalizeMessageForKeywordMatch($message);
+
+        if ($normalizedMessage === '') {
+            return;
+        }
+
+        $existingFaq = Faq::query()
+            ->select('id', 'question')
+            ->get()
+            ->first(function (Faq $faq) use ($normalizedMessage) {
+                return $this->normalizeMessageForKeywordMatch($faq->question) === $normalizedMessage;
+            });
+
+        if ($existingFaq) {
+            $existingFaq->update([
+                'answer' => $reply,
+                'status' => Faq::STATUS_PENDING,
+            ]);
+
+            return;
+        }
+
+        Faq::create([
+            'question' => $message,
+            'answer' => $reply,
+            'status' => Faq::STATUS_PENDING,
+            'keyword' => [],
+        ]);
+    }
+
     private function buildFaqContext(): string
     {
         $faqs = Faq::query()
             ->select('question', 'answer', 'keyword')
+            ->where('status', Faq::STATUS_ACTIVE)
             ->latest()
             ->take(20)
             ->get();

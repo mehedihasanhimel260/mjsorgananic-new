@@ -12,6 +12,7 @@ class Faq extends Model
     protected $fillable = [
         'question',
         'answer',
+        'status',
         'keyword',
     ];
 
@@ -19,6 +20,19 @@ class Faq extends Model
     {
         return [
             'keyword' => 'array',
+        ];
+    }
+
+    public const STATUS_ACTIVE = 'active';
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_INACTIVE = 'inactive';
+
+    public static function statuses(): array
+    {
+        return [
+            self::STATUS_ACTIVE,
+            self::STATUS_PENDING,
+            self::STATUS_INACTIVE,
         ];
     }
 

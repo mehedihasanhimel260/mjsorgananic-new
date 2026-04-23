@@ -13,6 +13,10 @@ class SteadfastService
 {
     private const BASE_URL = 'https://portal.packzy.com/api/v1';
 
+    public function __construct(private readonly UserVerificationService $userVerificationService)
+    {
+    }
+
     public function getSetting(): SteadfastSetting
     {
         return SteadfastSetting::firstOrCreate([], [
@@ -148,6 +152,8 @@ class SteadfastService
                 'courier_api_response' => $responsePayload,
             ]);
 
+            $this->userVerificationService->markVerifiedFromOrder($order->fresh());
+
             return [
                 'success' => is_array($data) && ($data['status'] ?? null) === 200,
                 'message' => is_array($data) && ($data['status'] ?? null) === 200
@@ -220,8 +226,11 @@ class SteadfastService
             'courier_api_response' => $courierResponse,
         ]);
 
+        $freshOrder = $order->fresh(['user']);
+        $this->userVerificationService->markVerifiedFromOrder($freshOrder);
+
         if ($deliveryStatus === 'cancelled') {
-            $this->deductAffiliateDeliveryChargeForCancelledCourierOrder($order->fresh());
+            $this->deductAffiliateDeliveryChargeForCancelledCourierOrder($freshOrder);
         }
 
         return [

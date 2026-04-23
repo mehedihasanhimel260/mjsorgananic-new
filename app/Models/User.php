@@ -22,6 +22,7 @@ class User extends Authenticatable
         'email',
         'phone',
         'alternative_phone',
+        'status',
         'PSID_OF_USER',
         'password',
         'location_permission',
@@ -81,5 +82,10 @@ class User extends Authenticatable
     public function conversions()
     {
         return $this->hasMany(Conversion::class);
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
     }
 }

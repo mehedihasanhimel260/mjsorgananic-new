@@ -8,7 +8,7 @@
                 <p class="text-xs font-semibold uppercase tracking-[0.28em] text-sky-100/90">User Directory</p>
                 <h1 class="mt-3 text-2xl font-black leading-tight lg:text-4xl">Search users fast by phone number and manage records cleanly</h1>
                 <p class="mt-3 max-w-2xl text-sm leading-6 text-sky-50 lg:text-base">
-                    4 digit-er beshi phone number search দিলে matching users instantly list হবে। Desktop-এ full table, mobile-এ readable responsive layout থাকবে।
+                    4 digit-er beshi phone number search ???? matching users instantly list ???? Desktop-? full table, mobile-? readable responsive layout ??????
                 </p>
             </div>
 
@@ -21,7 +21,11 @@
                     <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-100">Current Page</p>
                     <p class="mt-2 text-3xl font-black">{{ $users->currentPage() }}</p>
                 </div>
-                <div class="col-span-2 rounded-2xl border border-white/10 bg-white/12 p-4 backdrop-blur">
+                <div class="rounded-2xl border border-white/10 bg-white/12 p-4 backdrop-blur">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-100">Verified</p>
+                    <p class="mt-2 text-3xl font-black">{{ $users->getCollection()->where('status', 'verified')->count() }}</p>
+                </div>
+                <div class="rounded-2xl border border-white/10 bg-white/12 p-4 backdrop-blur">
                     <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-100">Search State</p>
                     <p class="mt-2 text-sm font-bold leading-6">{{ request('phone_search') ? 'Filtered by: '.request('phone_search') : 'Showing latest users list' }}</p>
                 </div>
@@ -56,7 +60,7 @@
                             <div class="control">
                                 <input class="input" type="text" name="phone_search" value="{{ request('phone_search', $search) }}" placeholder="Type more than 4 digits, e.g. 01712 or 66127">
                             </div>
-                            <p class="help">Phone number-এর 4 digit-er বেশি লিখলে partial match করে user show হবে।</p>
+                            <p class="help">Phone number-?? 4 digit-er ???? ????? partial match ??? user show ????</p>
                         </div>
                         <div class="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-4">
                             <p class="text-xs font-semibold uppercase tracking-[0.18em] text-sky-600">Quick Tip</p>
@@ -81,6 +85,7 @@
                             <th>SI</th>
                             <th>Name</th>
                             <th>Phone</th>
+                            <th>Status</th>
                             <th>Email</th>
                             <th>IP Address</th>
                             <th>Saved Address</th>
@@ -96,6 +101,11 @@
                             <td data-label="Phone">
                                 <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
                                     {{ $user->phone }}
+                                </span>
+                            </td>
+                            <td data-label="Status">
+                                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $user->status === 'verified' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                                    {{ ucfirst($user->status ?? 'unverified') }}
                                 </span>
                             </td>
                             <td data-label="Email">{{ $user->email ?? 'N/A' }}</td>
@@ -114,7 +124,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="has-text-centered">No users found.</td>
+                            <td colspan="9" class="has-text-centered">No users found.</td>
                         </tr>
                         @endforelse
                     </tbody>
@@ -129,9 +139,14 @@
                                 <p class="text-lg font-black text-slate-900">{{ $user->name }}</p>
                                 <p class="mt-1 inline-flex rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">{{ $user->phone }}</p>
                             </div>
-                            <a href="{{ route('admin.users.edit', $user->id) }}" class="button small blue" type="button">
-                                <span class="icon"><i class="mdi mdi-pencil"></i></span>
-                            </a>
+                            <div class="flex flex-col items-end gap-2">
+                                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $user->status === 'verified' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                                    {{ ucfirst($user->status ?? 'unverified') }}
+                                </span>
+                                <a href="{{ route('admin.users.edit', $user->id) }}" class="button small blue" type="button">
+                                    <span class="icon"><i class="mdi mdi-pencil"></i></span>
+                                </a>
+                            </div>
                         </div>
                         <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
                             <div class="col-span-2">

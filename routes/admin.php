@@ -98,6 +98,8 @@ Route::prefix('admin')
                 Route::post('faqs', [FaqController::class, 'store'])->name('faqs.store');
                 Route::get('faqs/{faq}/edit', [FaqController::class, 'edit'])->name('faqs.edit');
                 Route::patch('faqs/{faq}', [FaqController::class, 'update'])->name('faqs.update');
+                Route::delete('faqs/{faq}', [FaqController::class, 'destroy'])->name('faqs.destroy');
+                Route::delete('faqs/inactive/delete', [FaqController::class, 'destroyInactive'])->name('faqs.destroy-inactive');
             });
 
             Route::middleware('admin.permission:settings.manage')->group(function () {

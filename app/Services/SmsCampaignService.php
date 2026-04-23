@@ -204,7 +204,13 @@ class SmsCampaignService
 
     private function buildRecipientSnapshot(SmsCampaign $campaign, string $weekKey): array
     {
-        $users = User::query()->select('id', 'phone')->whereNotNull('phone')->orderBy('id')->get();
+        $users = User::query()
+            ->select('id', 'phone')
+            ->where('status', 'verified')
+            ->whereNotNull('phone')
+            ->orderBy('id')
+            ->get();
+
         $rows = [];
         $seenPhones = [];
         $batchNumber = 1;
