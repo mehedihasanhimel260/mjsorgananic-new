@@ -9,10 +9,16 @@ class DispatchWeeklySmsCampaignCommand extends Command
 {
     protected $signature = 'sms:dispatch-weekly-campaign';
 
-    protected $description = 'Create and dispatch the weekly SMS campaign from the active template.';
+    protected $description = 'Create and dispatch the scheduled weekly SMS campaign from the active template.';
 
     public function handle(SmsCampaignService $smsCampaignService): int
     {
+        if (! $smsCampaignService->shouldRunScheduledCampaign()) {
+            $this->info('SMS campaign schedule does not match the current day/time/date.');
+
+            return self::SUCCESS;
+        }
+
         $campaign = $smsCampaignService->createWeeklyCampaign();
 
         if (! $campaign) {

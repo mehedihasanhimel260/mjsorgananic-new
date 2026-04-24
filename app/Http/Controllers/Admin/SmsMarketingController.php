@@ -28,8 +28,9 @@ class SmsMarketingController extends Controller
         $templates = SmsTemplate::query()->latest()->get();
         $campaigns = SmsCampaign::query()->latest()->take(12)->get();
         $userCount = User::query()->whereNotNull('phone')->count();
+        $scheduleDays = $this->scheduleDays();
 
-        return view('admin.sms-settings.index', compact('setting', 'logs', 'templates', 'campaigns', 'userCount'));
+        return view('admin.sms-settings.index', compact('setting', 'logs', 'templates', 'campaigns', 'userCount', 'scheduleDays'));
     }
 
     public function update(Request $request)
@@ -39,10 +40,17 @@ class SmsMarketingController extends Controller
             'sender_id' => 'required|string|max:255',
             'api_key' => 'required|string|max:255',
             'transaction_type' => 'required|string|in:T,D,P',
+            'schedule_enabled' => 'nullable|boolean',
+            'schedule_day_of_week' => 'required|integer|between:0,6',
+            'schedule_time' => 'required|date_format:H:i',
+            'schedule_start_date' => 'required|date',
         ]);
 
         $setting = $this->smsGatewayService->getSetting();
-        $setting->update($validated);
+        $setting->update([
+            ...$validated,
+            'schedule_enabled' => $request->boolean('schedule_enabled'),
+        ]);
 
         return redirect()->route('admin.sms-settings.index')->with('success', 'SMS settings updated successfully.');
     }
@@ -196,5 +204,18 @@ class SmsMarketingController extends Controller
         }
 
         return SmsTemplate::query()->whereKey($templateId)->value('message');
+    }
+
+    private function scheduleDays(): array
+    {
+        return [
+            0 => 'Sunday',
+            1 => 'Monday',
+            2 => 'Tuesday',
+            3 => 'Wednesday',
+            4 => 'Thursday',
+            5 => 'Friday',
+            6 => 'Saturday',
+        ];
     }
 }

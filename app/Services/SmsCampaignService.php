@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Jobs\SendWeeklySmsBatchJob;
 use App\Models\SmsCampaign;
 use App\Models\SmsCampaignRecipient;
+use App\Models\SmsSetting;
 use App\Models\SmsTemplate;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -13,9 +14,60 @@ use Illuminate\Support\Facades\DB;
 class SmsCampaignService
 {
     public const WEEKLY_BATCH_SIZE = 100;
+    public const DEFAULT_SCHEDULE_DAY = 5;
+    public const DEFAULT_SCHEDULE_TIME = '10:00';
 
     public function __construct(private readonly SmsGatewayService $smsGatewayService)
     {
+    }
+
+    public function getScheduleSetting(): SmsSetting
+    {
+        return SmsSetting::query()->firstOrCreate([], [
+            'transaction_type' => 'T',
+            'schedule_enabled' => true,
+            'schedule_day_of_week' => self::DEFAULT_SCHEDULE_DAY,
+            'schedule_time' => self::DEFAULT_SCHEDULE_TIME,
+            'schedule_start_date' => now('Asia/Dhaka')->toDateString(),
+        ]);
+    }
+
+    public function shouldRunScheduledCampaign(?CarbonImmutable $now = null): bool
+    {
+        $setting = $this->getScheduleSetting();
+        $now ??= CarbonImmutable::now('Asia/Dhaka')->seconds(0);
+
+        if (! $setting->schedule_enabled) {
+            return false;
+        }
+
+        if ($setting->schedule_start_date && $now->toDateString() < $setting->schedule_start_date->toDateString()) {
+            return false;
+        }
+
+        return (int) ($setting->schedule_day_of_week ?? self::DEFAULT_SCHEDULE_DAY) === $now->dayOfWeek
+            && ($setting->schedule_time ?? self::DEFAULT_SCHEDULE_TIME) === $now->format('H:i');
+    }
+
+    public function describeSchedule(): array
+    {
+        $setting = $this->getScheduleSetting();
+        $days = [
+            0 => 'Sunday',
+            1 => 'Monday',
+            2 => 'Tuesday',
+            3 => 'Wednesday',
+            4 => 'Thursday',
+            5 => 'Friday',
+            6 => 'Saturday',
+        ];
+
+        return [
+            'enabled' => (bool) $setting->schedule_enabled,
+            'day_label' => $days[(int) ($setting->schedule_day_of_week ?? self::DEFAULT_SCHEDULE_DAY)] ?? 'Friday',
+            'time' => $setting->schedule_time ?? self::DEFAULT_SCHEDULE_TIME,
+            'start_date' => $setting->schedule_start_date,
+        ];
     }
 
     public function createWeeklyCampaign(): ?SmsCampaign

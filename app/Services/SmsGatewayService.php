@@ -18,6 +18,10 @@ class SmsGatewayService
             'sender_id' => '',
             'api_key' => '',
             'transaction_type' => 'T',
+            'schedule_enabled' => true,
+            'schedule_day_of_week' => 5,
+            'schedule_time' => '10:00',
+            'schedule_start_date' => now('Asia/Dhaka')->toDateString(),
             'current_balance' => 0,
             'last_balance_checked_at' => null,
         ]);
@@ -255,3 +259,4 @@ class SmsGatewayService
         return $code === '200';
     }
 }
+

@@ -10,7 +10,7 @@
                 <p class="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-100/90">SMS Delivery Hub</p>
                 <h1 class="mt-3 text-2xl font-black leading-tight lg:text-4xl">Reliable weekly SMS campaigns with clear template control</h1>
                 <p class="mt-3 max-w-2xl text-sm leading-6 text-emerald-50 lg:text-base">
-                    Weekly SMS প্রতি Friday 10:00 AM-এ batch করে যাবে। একই user same week-এ দ্বিতীয়বার weekly SMS পাবে না, কিন্তু manual single SMS যেকোনো সময় পাঠানো যাবে।
+                    Weekly SMS campaign ekhon dynamic schedule-e cholbe. Admin panel theke day, time, ar start date set kore dile oi schedule onujayi verified user-der kache weekly SMS jabe, ar same week-e duplicate jabe na.
                 </p>
                 <div class="mt-5 flex flex-wrap gap-3 text-sm">
                     <span class="rounded-full bg-white/15 px-4 py-2 font-semibold backdrop-blur">Batch size: 100 users</span>
@@ -81,6 +81,46 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="field md:col-span-2">
+                            <div class="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
+                                <div class="flex flex-wrap items-center justify-between gap-3">
+                                    <div>
+                                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Automation Schedule</p>
+                                        <p class="mt-1 text-sm text-emerald-900">Day, time, ar start date set kore weekly campaign dynamically control korte parben.</p>
+                                    </div>
+                                    <label class="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-semibold text-emerald-800 shadow-sm">
+                                        <input type="checkbox" name="schedule_enabled" value="1" @checked(old('schedule_enabled', $setting->schedule_enabled ?? true))>
+                                        <span>Schedule Active</span>
+                                    </label>
+                                </div>
+                                <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+                                    <div class="field !mb-0">
+                                        <label class="label">Day</label>
+                                        <div class="control">
+                                            <div class="select is-fullwidth">
+                                                <select name="schedule_day_of_week" required>
+                                                    @foreach($scheduleDays as $value => $label)
+                                                        <option value="{{ $value }}" @selected((int) old('schedule_day_of_week', $setting->schedule_day_of_week ?? 5) === (int) $value)>{{ $label }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="field !mb-0">
+                                        <label class="label">Time</label>
+                                        <div class="control">
+                                            <input class="input" type="time" name="schedule_time" value="{{ old('schedule_time', $setting->schedule_time ?? '10:00') }}" required>
+                                        </div>
+                                    </div>
+                                    <div class="field !mb-0">
+                                        <label class="label">Start Date</label>
+                                        <div class="control">
+                                            <input class="input" type="date" name="schedule_start_date" value="{{ old('schedule_start_date', optional($setting->schedule_start_date)->format('Y-m-d') ?? now('Asia/Dhaka')->format('Y-m-d')) }}" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="mt-4 flex flex-wrap items-center gap-3">
                         <button type="submit" class="button green">Update Settings</button>
@@ -104,14 +144,26 @@
                     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Currently Active</p>
                     <p class="mt-2 text-lg font-black text-slate-900">{{ $activeTemplate?->title ?? 'No active template selected' }}</p>
                     <p class="mt-2 text-sm leading-6 text-slate-600">
-                        {{ $activeTemplate ? 'এই template-টাই weekly campaign-এ ব্যবহার হবে।' : 'Weekly send চালাতে আগে একটি template active করতে হবে।' }}
+                        {{ $activeTemplate ? 'Ei template-tai weekly campaign-e use hobe.' : 'Weekly send chalate age ekta template active korte hobe.' }}
                     </p>
                 </div>
 
                 <div class="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
-                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Schedule</p>
-                    <p class="mt-2 text-sm font-bold text-emerald-900">Every Friday at 10:00 AM</p>
-                    <p class="mt-1 text-sm leading-6 text-emerald-700">Same week-এ same user দ্বিতীয়বার weekly SMS পাবে না।</p>
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Schedule</p>
+                            <p class="mt-2 text-sm font-bold text-emerald-900">
+                                {{ ($scheduleDays[(int) ($setting->schedule_day_of_week ?? 5)] ?? 'Friday') . ' at ' . ($setting->schedule_time ?? '10:00') }}
+                            </p>
+                            <p class="mt-1 text-sm leading-6 text-emerald-700">
+                                Start date: {{ optional($setting->schedule_start_date)->format('Y-m-d') ?? now('Asia/Dhaka')->format('Y-m-d') }}
+                            </p>
+                        </div>
+                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ ($setting->schedule_enabled ?? true) ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700' }}">
+                            {{ ($setting->schedule_enabled ?? true) ? 'Active' : 'Paused' }}
+                        </span>
+                    </div>
+                    <p class="mt-3 text-sm leading-6 text-emerald-700">Same week-e same verified user second time weekly SMS pabe na.</p>
                 </div>
 
                 <form method="POST" action="{{ route('admin.sms-settings.refresh-balance') }}">
@@ -462,3 +514,6 @@ function smsTemplatePicker() {
 }
 </script>
 @endpush
+
+
+
