@@ -4,22 +4,25 @@ namespace App\Services;
 
 use App\Jobs\SendWeeklySmsBatchJob;
 use App\Models\SmsCampaign;
-use App\Models\SmsCampaignRecipient;
+use App\Models\SmsLog;
 use App\Models\SmsSetting;
 use App\Models\SmsTemplate;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class SmsCampaignService
 {
-    public const WEEKLY_BATCH_SIZE = 100;
+    public const WEEKLY_BATCH_SIZE = 10;
+
     public const DEFAULT_SCHEDULE_DAY = 5;
+
     public const DEFAULT_SCHEDULE_TIME = '10:00';
 
-    public function __construct(private readonly SmsGatewayService $smsGatewayService)
-    {
-    }
+    public const BATCH_DELAY_SECONDS = 15;
+
+    public function __construct(private readonly SmsGatewayService $smsGatewayService) {}
 
     public function getScheduleSetting(): SmsSetting
     {
@@ -49,27 +52,6 @@ class SmsCampaignService
             && ($setting->schedule_time ?? self::DEFAULT_SCHEDULE_TIME) === $now->format('H:i');
     }
 
-    public function describeSchedule(): array
-    {
-        $setting = $this->getScheduleSetting();
-        $days = [
-            0 => 'Sunday',
-            1 => 'Monday',
-            2 => 'Tuesday',
-            3 => 'Wednesday',
-            4 => 'Thursday',
-            5 => 'Friday',
-            6 => 'Saturday',
-        ];
-
-        return [
-            'enabled' => (bool) $setting->schedule_enabled,
-            'day_label' => $days[(int) ($setting->schedule_day_of_week ?? self::DEFAULT_SCHEDULE_DAY)] ?? 'Friday',
-            'time' => $setting->schedule_time ?? self::DEFAULT_SCHEDULE_TIME,
-            'start_date' => $setting->schedule_start_date,
-        ];
-    }
-
     public function createWeeklyCampaign(): ?SmsCampaign
     {
         $template = SmsTemplate::query()->where('is_weekly_active', true)->latest('id')->first();
@@ -81,37 +63,21 @@ class SmsCampaignService
         [$weekStart, $weekEnd, $weekKey] = $this->currentWeekWindow();
 
         return DB::transaction(function () use ($template, $weekStart, $weekEnd, $weekKey) {
-            $existing = SmsCampaign::query()
-                ->where('campaign_type', 'weekly')
-                ->where('week_key', $weekKey)
-                ->lockForUpdate()
-                ->first();
-
-            if ($existing) {
-                return null;
-            }
-
-            $campaign = SmsCampaign::query()->create([
-                'sms_template_id' => $template->id,
-                'title' => $template->title,
-                'message' => $template->message,
-                'campaign_type' => 'weekly',
-                'week_key' => $weekKey,
-                'week_starts_at' => $weekStart,
-                'week_ends_at' => $weekEnd,
-                'status' => 'queued',
-                'batch_size' => self::WEEKLY_BATCH_SIZE,
-            ]);
-
-            $recipients = $this->buildRecipientSnapshot($campaign, $weekKey);
-
-            foreach (array_chunk($recipients, 500) as $chunk) {
-                SmsCampaignRecipient::query()->insert($chunk);
-            }
-
-            $this->refreshCampaignCounters($campaign);
-
-            return $campaign->fresh();
+            return SmsCampaign::query()->firstOrCreate(
+                [
+                    'campaign_type' => 'weekly',
+                    'week_key' => $weekKey,
+                ],
+                [
+                    'sms_template_id' => $template->id,
+                    'title' => $template->title,
+                    'message' => $template->message,
+                    'week_starts_at' => $weekStart,
+                    'week_ends_at' => $weekEnd,
+                    'status' => 'queued',
+                    'batch_size' => self::WEEKLY_BATCH_SIZE,
+                ]
+            );
         });
     }
 
@@ -119,106 +85,129 @@ class SmsCampaignService
     {
         $campaign->refresh();
 
-        $batchNumbers = SmsCampaignRecipient::query()
-            ->where('sms_campaign_id', $campaign->id)
-            ->whereIn('status', ['pending', 'failed'])
-            ->distinct()
-            ->orderBy('batch_number')
-            ->pluck('batch_number');
-
-        if ($batchNumbers->isEmpty()) {
+        if (SmsLog::query()->where('sms_campaign_id', $campaign->id)->where('send_type', 'weekly')->exists()) {
             $this->refreshCampaignCounters($campaign);
+
+            return 0;
+        }
+
+        $recipients = $this->eligibleWeeklyRecipients();
+
+        if ($recipients->isEmpty()) {
+            $campaign->update([
+                'status' => 'completed',
+                'total_recipients' => 0,
+                'pending_recipients' => 0,
+                'processing_recipients' => 0,
+                'sent_recipients' => 0,
+                'failed_recipients' => 0,
+                'started_at' => $campaign->started_at ?? now(),
+                'completed_at' => now(),
+            ]);
 
             return 0;
         }
 
         $campaign->update([
             'status' => 'processing',
+            'batch_size' => self::WEEKLY_BATCH_SIZE,
+            'total_recipients' => $recipients->count(),
+            'pending_recipients' => $recipients->count(),
             'started_at' => $campaign->started_at ?? now(),
+            'completed_at' => null,
         ]);
 
-        foreach ($batchNumbers as $batchNumber) {
-            SendWeeklySmsBatchJob::dispatch($campaign->id, (int) $batchNumber);
+        foreach ($recipients->chunk(self::WEEKLY_BATCH_SIZE)->values() as $index => $chunk) {
+            SendWeeklySmsBatchJob::dispatch($campaign->id, $chunk->values()->all())
+                ->delay(now()->addSeconds($index * self::BATCH_DELAY_SECONDS));
         }
 
-        return $batchNumbers->count();
+        return (int) ceil($recipients->count() / self::WEEKLY_BATCH_SIZE);
     }
 
-    public function sendBatch(SmsCampaign $campaign, int $batchNumber): void
+    public function sendBatch(SmsCampaign $campaign, array $recipients): void
     {
-        $recipientIds = DB::transaction(function () use ($campaign, $batchNumber) {
-            $rows = SmsCampaignRecipient::query()
-                ->where('sms_campaign_id', $campaign->id)
-                ->where('batch_number', $batchNumber)
-                ->whereIn('status', ['pending', 'failed'])
-                ->lockForUpdate()
-                ->get();
-
-            if ($rows->isEmpty()) {
-                return [];
-            }
-
-            $ids = $rows->pluck('id')->all();
-
-            SmsCampaignRecipient::query()
-                ->whereIn('id', $ids)
-                ->update([
-                    'status' => 'processing',
-                    'last_attempt_at' => now(),
-                    'attempts' => DB::raw('attempts + 1'),
-                ]);
-
-            return $ids;
-        });
-
-        if ($recipientIds === []) {
-            $this->refreshCampaignCounters($campaign);
-
-            return;
-        }
-
-        $recipients = SmsCampaignRecipient::query()
-            ->whereIn('id', $recipientIds)
-            ->orderBy('id')
-            ->get();
-
-        $phones = $recipients->pluck('phone')->implode(',');
+        $phones = collect($recipients)->pluck('phone')->implode(',');
         $result = $this->smsGatewayService->sendBulkSms($phones, $campaign->message);
+        $now = now();
 
-        $updatePayload = [
-            'status_code' => $result['code'],
-            'status_text' => $result['status_text'],
-            'gateway_response' => $result['raw_response'],
-            'gateway_transaction_id' => $result['transaction_id'],
-        ];
-
-        if ($result['success']) {
-            SmsCampaignRecipient::query()
-                ->whereIn('id', $recipientIds)
-                ->update($updatePayload + [
-                    'status' => 'sent',
-                    'sent_at' => now(),
-                ]);
-        } else {
-            SmsCampaignRecipient::query()
-                ->whereIn('id', $recipientIds)
-                ->update($updatePayload + [
-                    'status' => 'failed',
-                ]);
+        foreach ($recipients as $recipient) {
+            SmsLog::query()->create([
+                'sms_campaign_id' => $campaign->id,
+                'user_id' => $recipient['user_id'],
+                'phone' => $recipient['phone'],
+                'message' => $campaign->message,
+                'send_type' => 'weekly',
+                'campaign_key' => $campaign->week_key,
+                'gateway_transaction_id' => $result['transaction_id'],
+                'status_code' => $result['code'],
+                'status_text' => $result['status_text'],
+                'delivery_status' => $result['success'] ? 'processing' : 'failed',
+                'delivery_attempts' => 0,
+                'delivery_finalized_at' => $result['success'] ? null : $now,
+                'gateway_response' => $result['raw_response'],
+                'sent_at' => $now,
+            ]);
         }
 
         $this->refreshCampaignCounters($campaign);
     }
 
+    public function pollDeliveryStatuses(): int
+    {
+        $logs = SmsLog::query()
+            ->where('send_type', 'weekly')
+            ->where('delivery_status', 'processing')
+            ->whereNotNull('gateway_transaction_id')
+            ->whereNull('delivery_finalized_at')
+            ->orderBy('id')
+            ->limit(200)
+            ->get();
+
+        if ($logs->isEmpty()) {
+            return 0;
+        }
+
+        foreach ($logs as $log) {
+            $result = $this->smsGatewayService->checkDeliveryStatus((string) $log->gateway_transaction_id, $log->phone);
+            $now = now();
+            $deliveryStatus = $result['delivery_status'] ?? 'processing';
+
+            $payload = [
+                'status_code' => $result['status_code'],
+                'status_text' => $result['status_text'],
+                'gateway_response' => $result['raw_response'],
+                'delivery_status_checked_at' => $now,
+                'delivery_attempts' => DB::raw('delivery_attempts + 1'),
+                'updated_at' => $now,
+            ];
+
+            if (in_array($deliveryStatus, ['delivered', 'failed'], true)) {
+                $payload['delivery_status'] = $deliveryStatus;
+                $payload['delivery_finalized_at'] = $now;
+            }
+
+            SmsLog::query()->whereKey($log->id)->update($payload);
+
+            if ($log->sms_campaign_id && $campaign = SmsCampaign::query()->find($log->sms_campaign_id)) {
+                $this->refreshCampaignCounters($campaign);
+            }
+        }
+
+        return $logs->count();
+    }
+
     public function refreshCampaignCounters(SmsCampaign $campaign): void
     {
-        $base = SmsCampaignRecipient::query()->where('sms_campaign_id', $campaign->id);
+        $base = SmsLog::query()
+            ->where('sms_campaign_id', $campaign->id)
+            ->where('send_type', 'weekly');
 
-        $pending = (clone $base)->where('status', 'pending')->count();
-        $processing = (clone $base)->where('status', 'processing')->count();
-        $sent = (clone $base)->where('status', 'sent')->count();
-        $failed = (clone $base)->where('status', 'failed')->count();
         $total = (clone $base)->count();
+        $processing = (clone $base)->where('delivery_status', 'processing')->count();
+        $sent = (clone $base)->where('delivery_status', 'delivered')->count();
+        $failed = (clone $base)->where('delivery_status', 'failed')->count();
+        $pending = max($total - ($processing + $sent + $failed), 0);
 
         $status = 'queued';
         $completedAt = null;
@@ -230,12 +219,14 @@ class SmsCampaignService
             $status = 'processing';
         } elseif ($failed > 0) {
             $status = $sent > 0 ? 'partially_failed' : 'failed';
+            $completedAt = now();
         } else {
             $status = 'completed';
             $completedAt = now();
         }
 
         $campaign->update([
+            'batch_size' => self::WEEKLY_BATCH_SIZE,
             'total_recipients' => $total,
             'pending_recipients' => $pending,
             'processing_recipients' => $processing,
@@ -254,8 +245,17 @@ class SmsCampaignService
         return $weekKey;
     }
 
-    private function buildRecipientSnapshot(SmsCampaign $campaign, string $weekKey): array
+    private function eligibleWeeklyRecipients(): Collection
     {
+        $cutoff = now()->subDays(7);
+        $recentPhones = array_flip(
+            SmsLog::query()
+                ->where('send_type', 'weekly')
+                ->where('created_at', '>=', $cutoff)
+                ->pluck('phone')
+                ->all()
+        );
+
         $users = User::query()
             ->select('id', 'phone')
             ->where('status', 'verified')
@@ -265,39 +265,22 @@ class SmsCampaignService
 
         $rows = [];
         $seenPhones = [];
-        $batchNumber = 1;
-        $batchIndex = 0;
 
         foreach ($users as $user) {
             $normalizedPhone = $this->smsGatewayService->normalizePhone($user->phone);
 
-            if (! $normalizedPhone || isset($seenPhones[$normalizedPhone])) {
+            if (! $normalizedPhone || isset($seenPhones[$normalizedPhone]) || isset($recentPhones[$normalizedPhone])) {
                 continue;
             }
 
             $seenPhones[$normalizedPhone] = true;
-
             $rows[] = [
-                'sms_campaign_id' => $campaign->id,
                 'user_id' => $user->id,
                 'phone' => $normalizedPhone,
-                'week_key' => $weekKey,
-                'batch_number' => $batchNumber,
-                'status' => 'pending',
-                'attempts' => 0,
-                'created_at' => now(),
-                'updated_at' => now(),
             ];
-
-            $batchIndex++;
-
-            if ($batchIndex === self::WEEKLY_BATCH_SIZE) {
-                $batchIndex = 0;
-                $batchNumber++;
-            }
         }
 
-        return $rows;
+        return collect($rows);
     }
 
     private function currentWeekWindow(): array

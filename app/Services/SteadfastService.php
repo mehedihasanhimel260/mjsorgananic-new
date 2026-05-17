@@ -13,9 +13,7 @@ class SteadfastService
 {
     private const BASE_URL = 'https://portal.packzy.com/api/v1';
 
-    public function __construct(private readonly UserVerificationService $userVerificationService)
-    {
-    }
+    public function __construct(private readonly UserVerificationService $userVerificationService) {}
 
     public function getSetting(): SteadfastSetting
     {
@@ -109,6 +107,7 @@ class SteadfastService
 
         try {
             $recipientPhone = $this->normalizePhone((string) $order->user->phone);
+            $alternativePhone = $this->normalizePhone((string) ($order->user->alternative_phone ?? ''));
             $recipientName = $this->limitText((string) $order->user->name, 100);
             $recipientAddress = $this->limitText((string) $order->user->saved_address, 250);
 
@@ -129,6 +128,10 @@ class SteadfastService
                 'total_lot' => 1,
                 'delivery_type' => 0,
             ];
+
+            if ($alternativePhone) {
+                $payload['alternative_phone'] = $alternativePhone;
+            }
 
             $response = Http::timeout(20)
                 ->withHeaders($this->headers($setting))

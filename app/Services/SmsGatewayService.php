@@ -8,8 +8,12 @@ use Illuminate\Support\Facades\Http;
 class SmsGatewayService
 {
     private const SEND_URL = 'https://api.mimsms.com/api/SmsSending/SMS';
+
     private const BULK_SEND_URL = 'https://api.mimsms.com/api/SmsSending/OneToMany';
+
     private const BALANCE_URL = 'https://api.mimsms.com/api/SmsSending/balanceCheck';
+
+    private const DLR_URL = 'https://api.mimsms.com/api/SmsSending/DlrApi';
 
     public function getSetting(): SmsSetting
     {
@@ -133,6 +137,50 @@ class SmsGatewayService
         ], $phones);
     }
 
+    public function checkDeliveryStatus(string $transactionId, string $mobileNumber): array
+    {
+        $setting = $this->getSetting();
+
+        if (blank($setting->username) || blank($setting->api_key) || blank($transactionId) || blank($mobileNumber)) {
+            return [
+                'success' => false,
+                'final' => false,
+                'delivery_status' => null,
+                'status_code' => null,
+                'status_text' => 'Missing DLR credentials or transaction id.',
+                'raw_response' => null,
+            ];
+        }
+
+        $payload = [
+            'ApiKey' => $setting->api_key,
+            'UserName' => $setting->username,
+            'MobileNumber' => $mobileNumber,
+            'trxnId' => $transactionId,
+        ];
+
+        $response = Http::asJson()
+            ->withHeaders(['Authorization' => 'bearer'])
+            ->timeout(30)
+            ->withoutVerifying()
+            ->post(self::DLR_URL, $payload);
+
+        $rawBody = trim((string) $response->body());
+        $decoded = json_decode($rawBody, true);
+        $code = $this->extractStatusCode($decoded, $response->status());
+        $statusText = $this->extractDlrStatusText($decoded, $rawBody, $code);
+        $deliveryStatus = $this->extractDeliveryStatus($decoded, $rawBody, $statusText);
+
+        return [
+            'success' => $response->successful(),
+            'final' => in_array($deliveryStatus, ['delivered', 'failed'], true),
+            'delivery_status' => $deliveryStatus,
+            'status_code' => $code,
+            'status_text' => $statusText,
+            'raw_response' => $rawBody,
+        ];
+    }
+
     public function statusText(?string $code): string
     {
         return match ($code) {
@@ -170,12 +218,14 @@ class SmsGatewayService
         $body = [
             'UserName' => $setting->username,
             'Apikey' => $setting->api_key,
-            'CampaignId' => null,
+            'MobileNumber' => $phone,
+            'CampaignId' => 'null',
             'SenderName' => $setting->sender_id,
             'TransactionType' => $setting->transaction_type ?: 'T',
         ] + $payload;
 
         $response = Http::asJson()
+            ->withHeaders(['Authorization' => 'bearer'])
             ->timeout(60)
             ->withoutVerifying()
             ->post($url, $body);
@@ -258,5 +308,65 @@ class SmsGatewayService
 
         return $code === '200';
     }
-}
 
+    private function extractDeliveryStatus(mixed $decoded, string $rawBody, string $statusText): string
+    {
+        $candidates = [];
+
+        if (is_array($decoded)) {
+            foreach (['operatorStatus', 'deliveryStatus', 'delivery_status', 'dlrStatus', 'status', 'responseResult', 'message', 'dlrCode'] as $key) {
+                if (isset($decoded[$key])) {
+                    $candidates[] = (string) $decoded[$key];
+                }
+            }
+        }
+
+        $candidates[] = $statusText;
+        $candidates[] = $rawBody;
+
+        $haystack = strtolower(implode(' | ', array_filter($candidates)));
+
+        if (str_contains($haystack, 'delivered')) {
+            return 'delivered';
+        }
+
+        foreach ([
+            'undelivered',
+            'failed',
+            'absent subscriber',
+            'subscriber busy',
+            'unidentified subscriber',
+            'barred subscriber',
+            'illegal subscriber',
+            'system failure',
+            'sms failed',
+            'smsc timeout',
+            'timeout-abort',
+        ] as $terminalFailure) {
+            if (str_contains($haystack, $terminalFailure)) {
+                return 'failed';
+            }
+        }
+
+        return 'processing';
+    }
+
+    private function extractDlrStatusText(mixed $decoded, string $rawBody, ?string $code): string
+    {
+        if (is_array($decoded)) {
+            $parts = array_filter([
+                isset($decoded['status']) ? trim((string) $decoded['status']) : null,
+                isset($decoded['operatorStatus']) ? 'Operator Status: '.trim((string) $decoded['operatorStatus']) : null,
+                isset($decoded['dlrCode']) ? 'DLR Code: '.trim((string) $decoded['dlrCode']) : null,
+                isset($decoded['receiverMobile']) ? 'Receiver: '.trim((string) $decoded['receiverMobile']) : null,
+                isset($decoded['trxnId']) ? 'Transaction ID: '.trim((string) $decoded['trxnId']) : null,
+            ]);
+
+            if ($parts !== []) {
+                return implode(' | ', $parts);
+            }
+        }
+
+        return $rawBody !== '' ? $rawBody : $this->statusText($code);
+    }
+}

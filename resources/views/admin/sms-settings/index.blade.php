@@ -13,7 +13,7 @@
                     Weekly SMS campaign ekhon dynamic schedule-e cholbe. Admin panel theke day, time, ar start date set kore dile oi schedule onujayi verified user-der kache weekly SMS jabe, ar same week-e duplicate jabe na.
                 </p>
                 <div class="mt-5 flex flex-wrap gap-3 text-sm">
-                    <span class="rounded-full bg-white/15 px-4 py-2 font-semibold backdrop-blur">Batch size: 100 users</span>
+                    <span class="rounded-full bg-white/15 px-4 py-2 font-semibold backdrop-blur">Batch size: 10 users</span>
                     <span class="rounded-full bg-white/15 px-4 py-2 font-semibold backdrop-blur">Retry-safe weekly pipeline</span>
                 </div>
             </div>
@@ -24,7 +24,7 @@
                     <p class="mt-2 text-sm font-bold leading-6">{{ $activeTemplate?->title ?? 'No active template selected' }}</p>
                 </div>
                 <div class="rounded-2xl border border-white/10 bg-white/12 p-4 backdrop-blur">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-100">Reachable Users</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-100">Verified Users</p>
                     <p class="mt-2 text-3xl font-black">{{ number_format($userCount) }}</p>
                 </div>
                 <div class="rounded-2xl border border-white/10 bg-white/12 p-4 backdrop-blur">
@@ -163,7 +163,7 @@
                             {{ ($setting->schedule_enabled ?? true) ? 'Active' : 'Paused' }}
                         </span>
                     </div>
-                    <p class="mt-3 text-sm leading-6 text-emerald-700">Same week-e same verified user second time weekly SMS pabe na.</p>
+                    <p class="mt-3 text-sm leading-6 text-emerald-700">Last 7 diner moddhe weekly SMS geche emon verified number abar weekly queue-te dhukbe na.</p>
                 </div>
 
                 <form method="POST" action="{{ route('admin.sms-settings.refresh-balance') }}">
@@ -434,7 +434,7 @@
                                     <td>{{ $log->user?->name ?? 'N/A' }}</td>
                                     <td>{{ ucfirst($log->send_type) }}</td>
                                     <td>{{ $log->status_code ?? 'N/A' }}</td>
-                                    <td>{{ $log->status_text ?? 'Pending' }}</td>
+                                    <td>{{ ucfirst($log->delivery_status ?? 'pending') }}</td>
                                     <td class="text-sm">{{ \Illuminate\Support\Str::limit($log->message, 80) }}</td>
                                     <td>{{ $log->sent_at?->format('Y-m-d H:i') ?? 'Queued' }}</td>
                                 </tr>
@@ -465,7 +465,7 @@
                                 </div>
                                 <div class="col-span-2">
                                     <p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Status</p>
-                                    <p class="mt-1 text-slate-700">{{ $log->status_text ?? 'Pending' }}</p>
+                                    <p class="mt-1 text-slate-700">{{ ucfirst($log->delivery_status ?? 'pending') }}</p>
                                 </div>
                                 <div class="col-span-2">
                                     <p class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Message</p>
@@ -514,6 +514,9 @@ function smsTemplatePicker() {
 }
 </script>
 @endpush
+
+
+
 
 
 

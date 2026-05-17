@@ -12,7 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-          $middleware->alias([
+        $middleware->validateCsrfTokens(except: [
+            'facebook/webhook',
+        ]);
+
+        $middleware->alias([
             'admin.auth' => AdminAuth::class,
             'admin.permission' => AdminPermissionMiddleware::class,
         ]);

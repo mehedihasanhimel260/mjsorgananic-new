@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MiMSMS API Sandbox</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --orange: #FF6C37;
+  --bg-left: #2b2b2b;
+  --bg-main: #1e1e1e;
+  --bg-right: #303030;
+  --bg-code: #1a1a1a;
+  --bg-hover: #3a3a3a;
+  --bg-active: #3d3d3d;
+  --text: #d4d4d4;
+  --text-dim: #8a8a8a;
+  --text-bright: #f0f0f0;
+  --border: #3e3e3e;
+  --border-light: #484848;
+  --green: #6ab187;
+  --blue: #569cd6;
+  --yellow: #dcdcaa;
+  --string: #ce9178;
+  --key: #9cdcfe;
+  --url-color: #4ec9b0;
+  --sidebar-w: 280px;
+  --topbar-h: 60px;
+}
+
+html { height: 100%; font-size: 13px; }
+body {
+  height: 100%;
+  background: var(--bg-main);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* TOP BAR */
+.topbar {
+  height: var(--topbar-h);
+  background: #1a1a1a;
+  border-bottom: 1px solid #111;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 16px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+.topbar-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.logo-mark {
+  width: 32px; height: 32px; background: var(--orange); border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 14px; color: #fff; flex-shrink: 0;
+}
+.logo-name { font-size: 15px; font-weight: 700; color: var(--text-bright); }
+.logo-tag  { font-size: 10px; color: var(--text-dim); letter-spacing: .05em; text-transform: uppercase; }
+.topbar-center { flex: 1; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.topbar-badge {
+  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 3px;
+  background: rgba(255,108,55,.15); border: 1px solid rgba(255,108,55,.35);
+  color: var(--orange); text-transform: uppercase; letter-spacing: .06em; font-family: monospace;
+}
+.topbar-btn {
+  padding: 6px 14px; border-radius: 4px; background: var(--orange);
+  color: #fff; border: none; font-size: 12px; font-weight: 600;
+  cursor: pointer; text-decoration: none; transition: opacity .15s;
+}
+.topbar-btn:hover { opacity: .85; }
+
+/* LAYOUT */
+.body-layout { flex: 1; display: flex; overflow: hidden; }
+
+/* SIDEBAR */
+.sidebar {
+  width: var(--sidebar-w); background: var(--bg-left);
+  border-right: 1px solid #222; overflow-y: auto;
+  flex-shrink: 0; display: flex; flex-direction: column;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+
+.sidebar-search { padding: 12px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.sidebar-search input {
+  width: 100%; background: #1e1e1e; border: 1px solid var(--border-light);
+  border-radius: 4px; color: var(--text); font-size: 12px; padding: 6px 10px; outline: none;
+}
+.sidebar-search input:focus { border-color: var(--orange); }
+.sidebar-search input::placeholder { color: var(--text-dim); }
+
+.sidebar-section { padding: 8px 0; }
+.sidebar-section-title {
+  font-size: 10px; font-weight: 700; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: .1em; padding: 6px 14px 4px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 14px; cursor: pointer;
+  border-left: 2px solid transparent; transition: background .1s;
+  text-decoration: none;
+}
+.nav-item:hover { background: var(--bg-hover); }
+.nav-item.active { background: var(--bg-active); border-left-color: var(--orange); }
+.nav-item.active .nav-label { color: var(--text-bright); }
+.nav-label { font-size: 12px; color: var(--text); flex: 1; line-height: 1.4; }
+.method-tag {
+  font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 3px;
+  text-transform: uppercase; font-family: monospace; flex-shrink: 0;
+}
+.tag-post { background: rgba(91,155,213,.2); color: #5b9bd5; border: 1px solid rgba(91,155,213,.3); }
+.tag-get  { background: rgba(73,168,73,.2);  color: #49a849; border: 1px solid rgba(73,168,73,.3); }
+
+/* MAIN */
+.main-content { flex: 1; overflow-y: auto; background: var(--bg-main); }
+.main-content::-webkit-scrollbar { width: 6px; }
+.main-content::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
+/* INTRO */
+.intro-section { padding: 40px 48px 36px; border-bottom: 1px solid var(--border); max-width: 700px; }
+.intro-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.intro-logo-img {
+  width: 44px; height: 44px; background: var(--orange); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 900; color: #fff;
+}
+.intro-title   { font-size: 22px; font-weight: 700; color: var(--text-bright); }
+.intro-subtitle{ font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+.intro-desc    { font-size: 13px; color: var(--text); line-height: 1.7; margin-bottom: 16px; }
+.intro-meta { display: flex; gap: 24px; flex-wrap: wrap; }
+.meta-item { display: flex; flex-direction: column; gap: 2px; }
+.meta-key { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .08em; }
+.meta-val { font-size: 12px; color: var(--url-color); font-family: monospace; }
+
+/* ENDPOINT SECTION */
+.ep-wrap { display: flex; border-bottom: 1px solid var(--border); }
+.ep-left  { flex: 1; padding: 32px 48px; border-right: 1px solid var(--border); min-width: 0; }
+.ep-right { width: 420px; flex-shrink: 0; background: var(--bg-right); padding: 24px 20px; }
+
+.ep-method-line { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.ep-method-badge {
+  font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 4px;
+  text-transform: uppercase; font-family: monospace; flex-shrink: 0;
+}
+.badge-post { background: rgba(91,155,213,.18); color: #6bb3e8; border: 1px solid rgba(91,155,213,.35); }
+.badge-get  { background: rgba(73,168,73,.18);  color: #5dbf5d; border: 1px solid rgba(73,168,73,.35); }
+.ep-path   { font-family: monospace; font-size: 13px; color: var(--text-bright); word-break: break-all; }
+.ep-title  { font-size: 17px; font-weight: 700; color: var(--text-bright); margin-bottom: 10px; }
+.ep-desc   { font-size: 12.5px; color: var(--text); line-height: 1.7; margin-bottom: 20px; }
+
+.section-label {
+  font-size: 11px; font-weight: 700; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: .08em; margin: 20px 0 10px;
+}
+.section-label:first-child { margin-top: 0; }
+
+/* PARAMS TABLE */
+.params-table { width: 100%; border-collapse: collapse; margin-bottom: 4px; font-size: 12px; }
+.params-table th {
+  text-align: left; padding: 6px 10px; color: var(--text-dim);
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+  border-bottom: 1px solid var(--border);
+}
+.params-table td {
+  padding: 7px 10px; vertical-align: top;
+  border-bottom: 1px solid rgba(62,62,62,.5); color: var(--text); line-height: 1.5;
+}
+.params-table tr:last-child td { border-bottom: none; }
+.pn  { font-family: monospace; color: var(--key); font-size: 12px; }
+.pr  { color: #e06c75; font-size: 10px; font-weight: 700; }
+.po  { color: var(--yellow); font-size: 10px; font-weight: 700; }
+.pt  { color: var(--text-dim); font-size: 11px; font-family: monospace; }
+
+/* LANG TABS */
+.lang-tabs {
+  display: flex; border-bottom: 1px solid var(--border);
+  overflow-x: auto; flex-wrap: nowrap; margin-bottom: 0;
+}
+.lang-tab {
+  padding: 7px 12px; font-size: 11px; font-weight: 600; color: var(--text-dim);
+  cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent;
+  transition: color .12s; user-select: none; flex-shrink: 0;
+}
+.lang-tab:hover { color: var(--text); }
+.lang-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+
+/* CODE PANEL */
+.code-panel { background: var(--bg-code); border-radius: 4px; margin-top: 12px; overflow: hidden; }
+.code-panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 14px; background: #252525; border-bottom: 1px solid var(--border);
+}
+.code-panel-title { font-size: 10px; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.copy-btn {
+  font-size: 10px; color: var(--text-dim); background: #333;
+  border: 1px solid var(--border-light); padding: 2px 8px; border-radius: 3px;
+  cursor: pointer; font-family: monospace; transition: color .12s;
+}
+.copy-btn:hover { color: var(--text); }
+.copy-btn.done  { color: var(--green); border-color: var(--green); }
+
+pre.code-block {
+  padding: 14px 16px;
+  font-family: "Cascadia Code","Fira Code","Consolas",monospace;
+  font-size: 11.5px; line-height: 1.65; overflow-x: auto;
+  color: var(--text); white-space: pre;
+}
+pre.code-block::-webkit-scrollbar { height: 4px; }
+pre.code-block::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+
+.code-snippet { display: none; }
+.code-snippet.active { display: block; }
+
+.resp-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim); margin: 16px 0 6px; }
+.resp-badge { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.sdot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+.stxt { font-size: 11px; font-weight: 700; color: var(--green); font-family: monospace; }
+
+/* JSON highlight */
+.jk  { color: #9cdcfe; }
+.js  { color: #ce9178; }
+.jn  { color: #b5cea8; }
+.jok { color: #6ab187; font-weight: 700; }
+.jer { color: #e06c75; font-weight: 700; }
+
+/* REFERENCE SECTIONS */
+.ref-wrap { padding: 32px 48px; border-bottom: 1px solid var(--border); }
+.ref-table { width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.ref-table th {
+  text-align: left; padding: 8px 12px; color: var(--text-dim);
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+  border-bottom: 1px solid var(--border); background: #252525;
+}
+.ref-table td { padding: 8px 12px; border-bottom: 1px solid rgba(62,62,62,.5); vertical-align: top; line-height: 1.5; }
+.ref-table tr:last-child td { border-bottom: none; }
+.ref-table tbody tr:hover { background: rgba(255,255,255,.02); }
+.c200 { color: var(--green); font-family: monospace; font-weight: 700; }
+.c4xx { color: #e06c75; font-family: monospace; font-weight: 700; }
+.c2xx { color: var(--yellow); font-family: monospace; font-weight: 700; }
+.c5xx { color: #e06c75; font-family: monospace; font-weight: 700; }
+.dlr-ok { color: var(--green); font-weight: 600; }
+.r0 { color: #e06c75; font-family: monospace; font-weight: 700; }
+.r3 { color: var(--green); font-family: monospace; font-weight: 700; }
+
+/* FOOTER */
+.site-footer {
+  padding: 16px 48px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  background: #1a1a1a; font-size: 11px; color: var(--text-dim);
+  flex-wrap: wrap; gap: 8px;
+}
+.footer-links { display: flex; gap: 16px; }
+.footer-links a { color: var(--text-dim); text-decoration: none; }
+.footer-links a:hover { color: var(--orange); }
+
+@media (max-width: 900px) {
+  .ep-right { display: none; }
+  .ep-left  { padding: 24px 20px; }
+  .intro-section { padding: 24px 20px; }
+  .ref-wrap { padding: 24px 20px; }
+  :root { --sidebar-w: 220px; }
+}
+@media (max-width: 600px) {
+  .sidebar { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="topbar-logo" href="#">
+    <div class="logo-mark">M</div>
+    <div><div class="logo-name">MiMSMS</div><div class="logo-tag">API Sandbox</div></div>
+  </a>
+  <div class="topbar-center"></div>
+  <div class="topbar-right">
+    <span class="topbar-badge">REST API</span>
+    <a href="https://sms.mimsms.com" target="_blank" class="topbar-btn">SMS Panel</a>
+  </div>
+</div>
+
+<div class="body-layout">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-search">
+    <input type="text" placeholder="Search…" oninput="filterNav(this.value)">
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Overview</div>
+    <a href="#intro" class="nav-item active" data-label="Introduction"><span class="nav-label">Introduction</span></a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">SMS Sending</div>
+    <a href="#ep-sms"       class="nav-item" data-label="Send SMS"><span class="method-tag tag-post">POST</span><span class="nav-label">Send SMS</span></a>
+    <a href="#ep-otm"       class="nav-item" data-label="One to Many SMS"><span class="method-tag tag-post">POST</span><span class="nav-label">One to Many SMS</span></a>
+    <a href="#ep-dsms"      class="nav-item" data-label="Dynamic SMS"><span class="method-tag tag-post">POST</span><span class="nav-label">Dynamic SMS</span></a>
+    <a href="#ep-sms-get"   class="nav-item" data-label="Send SMS Query"><span class="method-tag tag-get">GET</span><span class="nav-label">Send SMS (Query)</span></a>
+    <a href="#ep-otm-get"   class="nav-item" data-label="One to Many Query"><span class="method-tag tag-get">GET</span><span class="nav-label">One to Many (Query)</span></a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Account</div>
+    <a href="#ep-balance"   class="nav-item" data-label="Balance Check"><span class="method-tag tag-get">GET</span><span class="nav-label">Balance Check</span></a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Reference</div>
+    <a href="#ep-errors"    class="nav-item" data-label="Error Status Codes"><span class="nav-label">Error Status Codes</span></a>
+    <a href="#ep-dlr"       class="nav-item" data-label="Operator DLR Codes"><span class="nav-label">Operator DLR Codes</span></a>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main-content" id="ms">
+
+  <!-- INTRO -->
+  <div class="intro-section" id="intro">
+    <div class="intro-logo">
+      <div class="intro-logo-img">M</div>
+      <div>
+        <div class="intro-title">MiMSMS Bulk SMS API</div>
+        <div class="intro-subtitle">Fast &amp; Reliable SMS Gateway for Bangladesh</div>
+      </div>
+    </div>
+    <p class="intro-desc">
+      This document provides instructions on how to quickly integrate MiMSMS communication services
+      into various solutions using the <strong>MiMSMS REST API</strong>. All requests are submitted
+      through POST (some via GET). We strongly recommend <strong>HTTPS</strong> for all requests
+      so traffic is encrypted and privacy is ensured.
+    </p>
+    <div class="intro-meta">
+      <div class="meta-item"><span class="meta-key">Base URL</span><span class="meta-val">https://api.mimsms.com</span></div>
+      <div class="meta-item"><span class="meta-key">Content-Type</span><span class="meta-val">application/json</span></div>
+      <div class="meta-item"><span class="meta-key">Auth</span><span class="meta-val">Username + API Key</span></div>
+      <div class="meta-item"><span class="meta-key">Authorization Header</span><span class="meta-val">bearer</span></div>
+    </div>
+  </div>
+
+  <!-- ══ SEND SMS ══ -->
+  <div class="ep-wrap" id="ep-sms">
+    <div class="ep-left">
+      <div class="ep-method-line">
+        <span class="ep-method-badge badge-post">POST</span>
+        <span class="ep-path">https://api.mimsms.com/api/SmsSending/SMS</span>
+      </div>
+      <div class="ep-title">Send SMS</div>
+      <p class="ep-desc">Send a single SMS to one destination. Phone number must be in international format without <code>+</code> sign (e.g. 8801844XXXXXX).</p>
+
+      <div class="section-label">Headers</div>
+      <table class="params-table">
+        <thead><tr><th>Key</th><th>Value</th></tr></thead>
+        <tbody><tr><td><span class="pn">Authorization</span></td><td>bearer</td></tr></tbody>
+      </table>
+
+      <div class="section-label">Body (raw JSON)</div>
+      <table class="params-table">
+        <thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pn">ApiKey</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>Your API Key from Developer Portal</td></tr>
+          <tr><td><span class="pn">MobileNumber</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>Destination number (e.g. 8801844XXXXXX)</td></tr>
+          <tr><td><span class="pn">SenderName</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>Your registered Sender ID</td></tr>
+          <tr><td><span class="pn">UserName</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>Your registered email / username</td></tr>
+          <tr><td><span class="pn">TransactionType</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td><code>T</code> = Transactional &nbsp;|&nbsp; <code>P</code> = Promotional &nbsp;|&nbsp; <code>D</code> = Dynamic</td></tr>
+          <tr><td><span class="pn">Message</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>SMS message body</td></tr>
+          <tr><td><span class="pn">CampaignId</span></td><td><span class="pt">string</span></td><td><span class="po">optional</span></td><td>Approved campaign ID (required for Promotional)</td></tr>
+          <tr><td><span class="pn">CampaignName</span></td><td><span class="pt">string</span></td><td><span class="po">optional</span></td><td>Campaign name for reference</td></tr>
+          <tr><td><span class="pn">MessageId</span></td><td><span class="pt">string</span></td><td><span class="po">optional</span></td><td>Custom message identifier</td></tr>
+          <tr><td><span class="pn">SmsData</span></td><td><span class="pt">null</span></td><td><span class="po">optional</span></td><td>For Dynamic SMS only; set <code>null</code> here</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ep-right">
+      <div class="lang-tabs" id="t-sms">
+        <div class="lang-tab active" onclick="sw('sms','curl')">cURL</div>
+        <div class="lang-tab" onclick="sw('sms','js')">JavaScript</div>
+        <div class="lang-tab" onclick="sw('sms','php')">PHP</div>
+        <div class="lang-tab" onclick="sw('sms','python')">Python</div>
+      </div>
+      <div class="code-panel">
+        <div class="code-panel-header"><span class="code-panel-title">Request</span><button class="copy-btn" onclick="cp(this)">Copy</button></div>
+        <div class="code-snippet active" data-tab="sms-curl"><pre class="code-block">curl --location 'https://api.mimsms.com/api/SmsSending/SMS' \
+--header 'Authorization: bearer' \
+--data-raw '{
+  "ApiKey":          "VTSJEXXXXXXXXXX9CL",
+  "MobileNumber":    "8801844XXXXXX",
+  "SenderName":      "iSMS",
+  "CampaignName":    "",
+  "UserName":        "abcd@example.com",
+  "TransactionType": "T",
+  "MessageId":       "",
+  "Message":         "Welcome to MiM Digital",
+  "CampaignId":      "null",
+  "SmsData":         null
+}'</pre></div>
+        <div class="code-snippet" data-tab="sms-js"><pre class="code-block">const res = await fetch(
+  'https://api.mimsms.com/api/SmsSending/SMS',
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': 'bearer',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      ApiKey:          "VTSJEXXXXXXXXXX9CL",
+      MobileNumber:    "8801844XXXXXX",
+      SenderName:      "iSMS",
+      CampaignName:    "",
+      UserName:        "abcd@example.com",
+      TransactionType: "T",
+      MessageId:       "",
+      Message:         "Welcome to MiM Digital",
+      CampaignId:      "null",
+      SmsData:         null
+    })
+  }
+);
+console.log(await res.json());</pre></div>
+        <div class="code-snippet" data-tab="sms-php"><pre class="code-block">&lt;?php
+$curl = curl_init();
+curl_setopt_array($curl, [
+  CURLOPT_URL => 'https://api.mimsms.com/api/SmsSending/SMS',
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_POST => true,
+  CURLOPT_HTTPHEADER => [
+    'Authorization: bearer',
+    'Content-Type: application/json'
+  ],
+  CURLOPT_POSTFIELDS => json_encode([
+    'ApiKey'          => 'VTSJEXXXXXXXXXX9CL',
+    'MobileNumber'    => '8801844XXXXXX',
+    'SenderName'      => 'iSMS',
+    'CampaignName'    => '',
+    'UserName'        => 'abcd@example.com',
+    'TransactionType' => 'T',
+    'MessageId'       => '',
+    'Message'         => 'Welcome to MiM Digital',
+    'CampaignId'      => 'null',
+    'SmsData'         => null
+  ])
+]);
+echo curl_exec($curl);
+curl_close($curl);</pre></div>
+        <div class="code-snippet" data-tab="sms-python"><pre class="code-block">import requests
+
+r = requests.post(
+    "https://api.mimsms.com/api/SmsSending/SMS",
+    headers={"Authorization": "bearer"},
+    json={
+        "ApiKey":          "VTSJEXXXXXXXXXX9CL",
+        "MobileNumber":    "8801844XXXXXX",
+        "SenderName":      "iSMS",
+        "CampaignName":    "",
+        "UserName":        "abcd@example.com",
+        "TransactionType": "T",
+        "MessageId":       "",
+        "Message":         "Welcome to MiM Digital",
+        "CampaignId":      "null",
+        "SmsData":         None
+    }
+)
+print(r.json())</pre></div>
+      </div>
+      <div class="resp-label">Response</div>
+      <div class="resp-badge"><span class="sdot"></span><span class="stxt">200 OK</span></div>
+      <div class="code-panel">
+        <div class="code-panel-header"><span class="code-panel-title">Body</span><button class="copy-btn" onclick="cp(this)">Copy</button></div>
+<pre class="code-block">{
+  <span class="jk">"statusCode"</span>:     <span class="js jok">"200"</span>,
+  <span class="jk">"status"</span>:         <span class="js jok">"Success"</span>,
+  <span class="jk">"trxnId"</span>:         <span class="js">"133611051403609881"</span>,
+  <span class="jk">"responseResult"</span>: <span class="js">"SMS Send Successfuly"</span>
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ONE TO MANY ══ -->
+  <div class="ep-wrap" id="ep-otm">
+    <div class="ep-left">
+      <div class="ep-method-line">
+        <span class="ep-method-badge badge-post">POST</span>
+        <span class="ep-path">https://api.mimsms.com/api/SmsSending/OneToMany</span>
+      </div>
+      <div class="ep-title">One to Many SMS</div>
+      <p class="ep-desc">Send the same SMS to multiple destinations in a single request. Separate multiple numbers with a comma.</p>
+      <div class="section-label">Body (raw JSON)</div>
+      <table class="params-table">
+        <thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pn">UserName</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>Your registered email / username</td></tr>
+          <tr><td><span class="pn">Apikey</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>Your API Key</td></tr>
+          <tr><td><span class="pn">MobileNumber</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>Comma-separated numbers (e.g. 8801844xxxxxx,8801713xxxxxx)</td></tr>
+          <tr><td><span class="pn">SenderName</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>Your registered Sender ID</td></tr>
+          <tr><td><span class="pn">TransactionType</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td><code>T</code> = Transactional &nbsp;|&nbsp; <code>P</code> = Promotional</td></tr>
+          <tr><td><span class="pn">Message</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>SMS message body</td></tr>
+          <tr><td><span class="pn">CampaignId</span></td><td><span class="pt">string</span></td><td><span class="po">optional</span></td><td>Approved campaign ID</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ep-right">
+      <div class="lang-tabs" id="t-otm">
+        <div class="lang-tab active" onclick="sw('otm','curl')">cURL</div>
+        <div class="lang-tab" onclick="sw('otm','js')">JavaScript</div>
+        <div class="lang-tab" onclick="sw('otm','php')">PHP</div>
+        <div class="lang-tab" onclick="sw('otm','python')">Python</div>
+      </div>
+      <div class="code-panel">
+        <div class="code-panel-header"><span class="code-panel-title">Request</span><button class="copy-btn" onclick="cp(this)">Copy</button></div>
+        <div class="code-snippet active" data-tab="otm-curl"><pre class="code-block">curl --location \
+  'https://api.mimsms.com/api/SmsSending/OneToMany' \
+  --header 'Authorization: bearer' \
+  --data-raw '{
+    "UserName":        "abcd@example.com",
+    "Apikey":          "VTSJEXXXX9X9CL",
+    "MobileNumber":    "8801844xxxxxx,8801713xxxxxx",
+    "CampaignId":      "null",
+    "SenderName":      "iSMS",
+    "TransactionType": "T",
+    "Message":         "Hello one to many from MiM SMS"
+  }'</pre></div>
+        <div class="code-snippet" data-tab="otm-js"><pre class="code-block">const res = await fetch(
+  'https://api.mimsms.com/api/SmsSending/OneToMany',
+  {
+    method: 'POST',
+    headers: { 'Authorization':'bearer','Content-Type':'application/json' },
+    body: JSON.stringify({
+      UserName:        "abcd@example.com",
+      Apikey:          "VTSJEXXXX9X9CL",
+      MobileNumber:    "8801844xxxxxx,8801713xxxxxx",
+      CampaignId:      "null",
+      SenderName:      "iSMS",
+      TransactionType: "T",
+      Message:         "Hello one to many from MiM SMS"
+    })
+  }
+);
+console.log(await res.json());</pre></div>
+        <div class="code-snippet" data-tab="otm-php"><pre class="code-block">&lt;?php
+$curl = curl_init();
+curl_setopt_array($curl, [
+  CURLOPT_URL => 'https://api.mimsms.com/api/SmsSending/OneToMany',
+  CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true,
+  CURLOPT_HTTPHEADER => ['Authorization: bearer','Content-Type: application/json'],
+  CURLOPT_POSTFIELDS => json_encode([
+    'UserName'=>'abcd@example.com','Apikey'=>'VTSJEXXXX9X9CL',
+    'MobileNumber'=>'8801844xxxxxx,8801713xxxxxx','CampaignId'=>'null',
+    'SenderName'=>'iSMS','TransactionType'=>'T',
+    'Message'=>'Hello one to many from MiM SMS'
+  ])
+]);
+echo curl_exec($curl); curl_close($curl);</pre></div>
+        <div class="code-snippet" data-tab="otm-python"><pre class="code-block">import requests
+r = requests.post(
+    "https://api.mimsms.com/api/SmsSending/OneToMany",
+    headers={"Authorization":"bearer"},
+    json={
+        "UserName":"abcd@example.com","Apikey":"VTSJEXXXX9X9CL",
+        "MobileNumber":"8801844xxxxxx,8801713xxxxxx","CampaignId":"null",
+        "SenderName":"iSMS","TransactionType":"T",
+        "Message":"Hello one to many from MiM SMS"
+    }
+)
+print(r.json())</pre></div>
+      </div>
+      <div class="resp-label">Response</div>
+      <div class="resp-badge"><span class="sdot"></span><span class="stxt">200 OK</span></div>
+      <div class="code-panel">
+        <div class="code-panel-header"><span class="code-panel-title">Body</span><button class="copy-btn" onclick="cp(this)">Copy</button></div>
+<pre class="code-block">{
+  <span class="jk">"statusCode"</span>: <span class="js jok">"Success"</span>,
+  <span class="jk">"status"</span>:     <span class="js jok">"200"</span>,
+  <span class="jk">"trxnId"</span>:     <span class="js">"133611052461205495"</span>,
+  <span class="jk">"responseResult"</span>: <span class="js">"SMS Send Successfuly"</span>
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ DYNAMIC SMS ══ -->
+  <div class="ep-wrap" id="ep-dsms">
+    <div class="ep-left">
+      <div class="ep-method-line">
+        <span class="ep-method-badge badge-post">POST</span>
+        <span class="ep-path">https://api.mimsms.com/api/SmsSending/DSMS</span>
+      </div>
+      <div class="ep-title">Dynamic SMS</div>
+      <p class="ep-desc">Send personalized messages to multiple destinations in one API call. Each entry in <code>SmsData</code> can carry a different message for each number.</p>
+      <div class="section-label">Body (raw JSON)</div>
+      <table class="params-table">
+        <thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pn">UserName</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>Your registered email / username</td></tr>
+          <tr><td><span class="pn">Apikey</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>Your API Key</td></tr>
+          <tr><td><span class="pn">SenderName</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>Your registered Sender ID</td></tr>
+          <tr><td><span class="pn">TransactionType</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>Must be <code>D</code> for Dynamic SMS</td></tr>
+          <tr><td><span class="pn">SmsData</span></td><td><span class="pt">array</span></td><td><span class="pr">required</span></td><td>Array of <code>{ MobNumber, Message }</code> objects</td></tr>
+        </tbody>
+      </table>
+      <div class="section-label">SmsData object</div>
+      <table class="params-table">
+        <thead><tr><th>Key</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pn">MobNumber</span></td><td><span class="pt">string</span></td><td>Destination number in international format</td></tr>
+          <tr><td><span class="pn">Message</span></td><td><span class="pt">string</span></td><td>Individual message text for this number</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ep-right">
+      <div class="lang-tabs" id="t-dsms">
+        <div class="lang-tab active" onclick="sw('dsms','curl')">cURL</div>
+        <div class="lang-tab" onclick="sw('dsms','js')">JavaScript</div>
+        <div class="lang-tab" onclick="sw('dsms','php')">PHP</div>
+        <div class="lang-tab" onclick="sw('dsms','python')">Python</div>
+      </div>
+      <div class="code-panel">
+        <div class="code-panel-header"><span class="code-panel-title">Request</span><button class="copy-btn" onclick="cp(this)">Copy</button></div>
+        <div class="code-snippet active" data-tab="dsms-curl"><pre class="code-block">curl --location \
+  'https://api.mimsms.com/api/SmsSending/DSMS' \
+  --header 'Authorization: bearer' \
+  --data-raw '{
+    "UserName":        "abcd@example.com",
+    "Apikey":          "VTSJXXXX9X9CL",
+    "SenderName":      "018960iSMS50628",
+    "TransactionType": "D",
+    "SmsData": [
+      { "MobNumber": "880184490xxxx", "Message": "Dynamic Messages 1" },
+      { "MobNumber": "880171353xxxx", "Message": "Dynamic Messages 2" }
+    ]
+  }'</pre></div>
+        <div class="code-snippet" data-tab="dsms-js"><pre class="code-block">const res = await fetch(
+  'https://api.mimsms.com/api/SmsSending/DSMS',
+  {
+    method: 'POST',
+    headers: { 'Authorization':'bearer','Content-Type':'application/json' },
+    body: JSON.stringify({
+      UserName: "abcd@example.com", Apikey: "VTSJXXXX9X9CL",
+      SenderName: "018960iSMS50628", TransactionType: "D",
+      SmsData: [
+        { MobNumber: "880184490xxxx", Message: "Dynamic Messages 1" },
+        { MobNumber: "880171353xxxx", Message: "Dynamic Messages 2" }
+      ]
+    })
+  }
+);
+console.log(await res.json());</pre></div>
+        <div class="code-snippet" data-tab="dsms-php"><pre class="code-block">&lt;?php
+$curl = curl_init();
+curl_setopt_array($curl, [
+  CURLOPT_URL => 'https://api.mimsms.com/api/SmsSending/DSMS',
+  CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true,
+  CURLOPT_HTTPHEADER => ['Authorization: bearer','Content-Type: application/json'],
+  CURLOPT_POSTFIELDS => json_encode([
+    'UserName'=>'abcd@example.com','Apikey'=>'VTSJXXXX9X9CL',
+    'SenderName'=>'018960iSMS50628','TransactionType'=>'D',
+    'SmsData'=>[
+      ['MobNumber'=>'880184490xxxx','Message'=>'Dynamic Messages 1'],
+      ['MobNumber'=>'880171353xxxx','Message'=>'Dynamic Messages 2']
+    ]
+  ])
+]);
+echo curl_exec($curl); curl_close($curl);</pre></div>
+        <div class="code-snippet" data-tab="dsms-python"><pre class="code-block">import requests
+r = requests.post(
+    "https://api.mimsms.com/api/SmsSending/DSMS",
+    headers={"Authorization":"bearer"},
+    json={
+        "UserName":"abcd@example.com","Apikey":"VTSJXXXX9X9CL",
+        "SenderName":"018960iSMS50628","TransactionType":"D",
+        "SmsData":[
+            {"MobNumber":"880184490xxxx","Message":"Dynamic Messages 1"},
+            {"MobNumber":"880171353xxxx","Message":"Dynamic Messages 2"}
+        ]
+    }
+)
+print(r.json())</pre></div>
+      </div>
+      <div class="resp-label">Response</div>
+      <div class="resp-badge"><span class="sdot"></span><span class="stxt">200 OK</span></div>
+      <div class="code-panel">
+        <div class="code-panel-header"><span class="code-panel-title">Body</span><button class="copy-btn" onclick="cp(this)">Copy</button></div>
+<pre class="code-block">{
+  <span class="jk">"statusCode"</span>:     <span class="js jok">"200"</span>,
+  <span class="jk">"status"</span>:         <span class="js jok">"Success"</span>,
+  <span class="jk">"trxnId"</span>:         <span class="js">"ZICU7TMXV9B6ZG8_C28"</span>,
+  <span class="jk">"responseResult"</span>: <span class="js">"SMS Send Successfuly"</span>
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SEND SMS GET ══ -->
+  <div class="ep-wrap" id="ep-sms-get">
+    <div class="ep-left">
+      <div class="ep-method-line">
+        <span class="ep-method-badge badge-get">GET</span>
+        <span class="ep-path">https://api.mimsms.com/api/SmsSending/Send</span>
+      </div>
+      <div class="ep-title">Send SMS (Query String)</div>
+      <p class="ep-desc">Send SMS by passing all parameters as URL query string variables. Useful for simple integrations.</p>
+      <div class="section-label">Query Parameters</div>
+      <table class="params-table">
+        <thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pn">UserName</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>Your username / email</td></tr>
+          <tr><td><span class="pn">Apikey</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>Your API Key</td></tr>
+          <tr><td><span class="pn">MobileNumber</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>Destination number (international format)</td></tr>
+          <tr><td><span class="pn">SenderName</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>Registered Sender ID</td></tr>
+          <tr><td><span class="pn">TransactionType</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td><code>T</code>, <code>P</code>, or <code>D</code></td></tr>
+          <tr><td><span class="pn">Message</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>SMS message body</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ep-right">
+      <div class="lang-tabs" id="t-smsget">
+        <div class="lang-tab active" onclick="sw('smsget','curl')">cURL</div>
+        <div class="lang-tab" onclick="sw('smsget','url')">URL</div>
+      </div>
+      <div class="code-panel">
+        <div class="code-panel-header"><span class="code-panel-title">Request</span><button class="copy-btn" onclick="cp(this)">Copy</button></div>
+        <div class="code-snippet active" data-tab="smsget-curl"><pre class="code-block">curl --location \
+'https://api.mimsms.com/api/SmsSending/Send\
+?UserName=asdf@mimsms.com\
+&Apikey=JFGDJKFHDFDDDGG\
+&MobileNumber=880171353xxxx\
+&SenderName=iSMS\
+&TransactionType=T\
+&Message=Welcome+to+MiM+SMS'</pre></div>
+        <div class="code-snippet" data-tab="smsget-url"><pre class="code-block">https://api.mimsms.com/api/SmsSending/Send
+  ?UserName=asdf@mimsms.com
+  &Apikey=JFGDJKFHDFDDDGG
+  &MobileNumber=880171353xxxx
+  &SenderName=iSMS
+  &TransactionType=T
+  &Message=Welcome to MiM SMS</pre></div>
+      </div>
+      <div class="resp-label">Response</div>
+      <div class="resp-badge"><span class="sdot"></span><span class="stxt">200 OK</span></div>
+      <div class="code-panel">
+        <div class="code-panel-header"><span class="code-panel-title">Body</span><button class="copy-btn" onclick="cp(this)">Copy</button></div>
+<pre class="code-block">{
+  <span class="jk">"statusCode"</span>:     <span class="js jok">"200"</span>,
+  <span class="jk">"status"</span>:         <span class="js jok">"Success"</span>,
+  <span class="jk">"responseResult"</span>: <span class="js">"SMS Send Successfuly"</span>,
+  <span class="jk">"trxnId"</span>:         <span class="js">"133706043022339846"</span>
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ONE TO MANY GET ══ -->
+  <div class="ep-wrap" id="ep-otm-get">
+    <div class="ep-left">
+      <div class="ep-method-line">
+        <span class="ep-method-badge badge-get">GET</span>
+        <span class="ep-path">https://api.mimsms.com/api/SmsSending/SendOneToMany</span>
+      </div>
+      <div class="ep-title">One to Many SMS (Query String)</div>
+      <p class="ep-desc">Send the same SMS to multiple numbers via HTTP GET. Comma-separate values in the <code>MobileNumber</code> param.</p>
+      <div class="section-label">Query Parameters</div>
+      <table class="params-table">
+        <thead><tr><th>Key</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pn">UserName</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>Your username / email</td></tr>
+          <tr><td><span class="pn">Apikey</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>Your API Key</td></tr>
+          <tr><td><span class="pn">MobileNumber</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>Comma-separated destination numbers</td></tr>
+          <tr><td><span class="pn">SenderName</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>Registered Sender ID</td></tr>
+          <tr><td><span class="pn">TransactionType</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td><code>T</code> or <code>P</code></td></tr>
+          <tr><td><span class="pn">Message</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td><td>SMS message body</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ep-right">
+      <div class="lang-tabs" id="t-otmget">
+        <div class="lang-tab active" onclick="sw('otmget','curl')">cURL</div>
+        <div class="lang-tab" onclick="sw('otmget','url')">URL</div>
+      </div>
+      <div class="code-panel">
+        <div class="code-panel-header"><span class="code-panel-title">Request</span><button class="copy-btn" onclick="cp(this)">Copy</button></div>
+        <div class="code-snippet active" data-tab="otmget-curl"><pre class="code-block">curl --location \
+'https://api.mimsms.com/api/SmsSending/SendOneToMany\
+?SenderName=8809617620712\
+&TransactionType=T\
+&UserName=asdf@mimsms.com\
+&Apikey=JHJGJHHKJHJHGJG\
+&MobileNumber=880184490xxxx,880171353xxxx\
+&Message=One+to+many+API+check+from+MiMSMS' \
+--header 'Authorization: bearer'</pre></div>
+        <div class="code-snippet" data-tab="otmget-url"><pre class="code-block">https://api.mimsms.com/api/SmsSending/SendOneToMany
+  ?UserName=asdf@mimsms.com
+  &Apikey=JHJGJHHKJHJHGJG
+  &MobileNumber=880184490xxxx,880171353xxxx
+  &SenderName=8809617620712
+  &TransactionType=T
+  &Message=One to many API check from MiMSMS</pre></div>
+      </div>
+      <div class="resp-label">Response</div>
+      <div class="resp-badge"><span class="sdot"></span><span class="stxt">200 OK</span></div>
+      <div class="code-panel">
+        <div class="code-panel-header"><span class="code-panel-title">Body</span><button class="copy-btn" onclick="cp(this)">Copy</button></div>
+<pre class="code-block">{
+  <span class="jk">"statusCode"</span>:     <span class="js jok">"200"</span>,
+  <span class="jk">"status"</span>:         <span class="js jok">"Success"</span>,
+  <span class="jk">"responseResult"</span>: <span class="js">"SMS Send successfully"</span>,
+  <span class="jk">"trxnId"</span>:         <span class="js">"J4Y3RQ6Z5QIL7H2"</span>
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ BALANCE CHECK ══ -->
+  <div class="ep-wrap" id="ep-balance">
+    <div class="ep-left">
+      <div class="ep-method-line">
+        <span class="ep-method-badge badge-get">GET</span>
+        <span class="ep-method-badge badge-post">POST</span>
+        <span class="ep-path">https://api.mimsms.com/api/SmsSending/balanceCheck</span>
+      </div>
+      <div class="ep-title">Balance Check</div>
+      <p class="ep-desc">Check your current SMS balance. Supports both JSON POST body and query string GET.</p>
+      <div class="section-label">POST — Body Parameters</div>
+      <table class="params-table">
+        <thead><tr><th>Key</th><th>Type</th><th>Required</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pn">UserName</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td></tr>
+          <tr><td><span class="pn">Apikey</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td></tr>
+        </tbody>
+      </table>
+      <div class="section-label">GET — Query Parameters</div>
+      <table class="params-table">
+        <thead><tr><th>Key</th><th>Type</th><th>Required</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pn">userName</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td></tr>
+          <tr><td><span class="pn">Apikey</span></td><td><span class="pt">string</span></td><td><span class="pr">required</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ep-right">
+      <div class="lang-tabs" id="t-bal">
+        <div class="lang-tab active" onclick="sw('bal','post')">cURL POST</div>
+        <div class="lang-tab" onclick="sw('bal','get')">cURL GET</div>
+        <div class="lang-tab" onclick="sw('bal','python')">Python</div>
+      </div>
+      <div class="code-panel">
+        <div class="code-panel-header"><span class="code-panel-title">Request</span><button class="copy-btn" onclick="cp(this)">Copy</button></div>
+        <div class="code-snippet active" data-tab="bal-post"><pre class="code-block">curl --location \
+  'https://api.mimsms.com/api/SmsSending/balanceCheck' \
+  --header 'Content-Type: application/json' \
+  --data-raw '{
+    "UserName": "you@example.com",
+    "Apikey":   "XXXXXXXXXXXXX"
+  }'</pre></div>
+        <div class="code-snippet" data-tab="bal-get"><pre class="code-block">curl --location \
+'https://api.mimsms.com/api/SmsSending/balanceCheck\
+?userName=you@example.com\
+&Apikey=XXXXXXXXXXXX'</pre></div>
+        <div class="code-snippet" data-tab="bal-python"><pre class="code-block">import requests
+
+# POST
+r = requests.post(
+    "https://api.mimsms.com/api/SmsSending/balanceCheck",
+    json={"UserName":"you@example.com","Apikey":"XXXXX"}
+)
+print(r.json())
+
+# GET
+r = requests.get(
+    "https://api.mimsms.com/api/SmsSending/balanceCheck",
+    params={"userName":"you@example.com","Apikey":"XXXXX"}
+)
+print(r.json())</pre></div>
+      </div>
+      <div class="resp-label">Response</div>
+      <div class="resp-badge"><span class="sdot"></span><span class="stxt">200 OK</span></div>
+      <div class="code-panel">
+        <div class="code-panel-header"><span class="code-panel-title">Body</span><button class="copy-btn" onclick="cp(this)">Copy</button></div>
+<pre class="code-block">{
+  <span class="jk">"statusCode"</span>:     <span class="js jok">"200"</span>,
+  <span class="jk">"status"</span>:         <span class="js jok">"Ok"</span>,
+  <span class="jk">"trxnId"</span>:         <span class="js">""</span>,
+  <span class="jk">"responseResult"</span>: <span class="jn">"999.54"</span>
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ERROR CODES ══ -->
+  <div class="ref-wrap" id="ep-errors">
+    <div class="ep-title">Error Status Code Map</div>
+    <p class="ep-desc" style="margin-bottom:20px;">All API responses include a <code>statusCode</code> field. Use this table to handle errors in your integration.</p>
+    <table class="ref-table">
+      <thead><tr><th>Code</th><th>Status</th><th>Description</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td><span class="c200">200</span></td><td>SUCCESS</td><td>SMS sent successfully</td><td>—</td></tr>
+        <tr><td><span class="c4xx">401</span></td><td>UNAUTHORIZED</td><td>IP Blacklisted</td><td>Contact account manager</td></tr>
+        <tr><td><span class="c4xx">401</span></td><td>UNAUTHORIZED</td><td>Invalid Username &amp; Password</td><td>—</td></tr>
+        <tr><td><span class="c2xx">208</span></td><td>FAILED</td><td>Invalid Sender ID</td><td>—</td></tr>
+        <tr><td><span class="c2xx">205</span></td><td>FAILED</td><td>Invalid Message Content</td><td>—</td></tr>
+        <tr><td><span class="c2xx">206</span></td><td>FAILED</td><td>Invalid Mobile Number</td><td>—</td></tr>
+        <tr><td><span class="c2xx">209</span></td><td>FAILED</td><td>SMS length exceeds max limit</td><td>—</td></tr>
+        <tr><td><span class="c2xx">221</span></td><td>FAILED</td><td>SMS Sending Failed</td><td>—</td></tr>
+        <tr><td><span class="c5xx">500</span></td><td>FAILED</td><td>Internal Server Error</td><td>—</td></tr>
+        <tr><td><span class="c2xx">213</span></td><td>FAILED</td><td>Parameter Mismatch</td><td>—</td></tr>
+        <tr><td><span class="c2xx">216</span></td><td>FAILED</td><td>Insufficient Balance</td><td>Recharge your account</td></tr>
+        <tr><td><span class="c2xx">210</span></td><td>FAILED</td><td>Invalid CampaignId</td><td>—</td></tr>
+        <tr><td><span class="c2xx">207</span></td><td>FAILED</td><td>Invalid Transaction Type</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <div class="section-label" style="margin-top:24px;">Error Response Example</div>
+    <div class="code-panel" style="max-width:440px;">
+      <div class="code-panel-header"><span class="code-panel-title">Body</span><button class="copy-btn" onclick="cp(this)">Copy</button></div>
+<pre class="code-block">{
+  <span class="jk">"statusCode"</span>:     <span class="js jer">"208"</span>,
+  <span class="jk">"status"</span>:         <span class="js jer">"Failed"</span>,
+  <span class="jk">"trxnId"</span>:         <span class="js">"KC5EBJ9XG0HKJY5_C"</span>,
+  <span class="jk">"responseResult"</span>: <span class="js jer">"Invalid Sender ID"</span>
+}</pre>
+    </div>
+  </div>
+
+  <!-- ══ DLR CODES ══ -->
+  <div class="ref-wrap" id="ep-dlr">
+    <div class="ep-title">Operator DLR Error Status</div>
+    <p class="ep-desc" style="margin-bottom:20px;">Delivery Report statuses returned from the operator after an SMS is submitted to the network.</p>
+    <table class="ref-table">
+      <thead><tr><th>Error Code Name</th><th>Error Description</th><th>Operator Retry Policy</th></tr></thead>
+      <tbody>
+        <tr><td><span class="dlr-ok">Delivered</span></td><td>Delivered in handset</td><td><span class="r0">0</span></td></tr>
+        <tr><td>Absent subscriber for SM</td><td>Subscriber handset not on network (off/out of coverage, likely 12+ hrs)</td><td><span class="r3">3</span></td></tr>
+        <tr><td>Undelivered</td><td>Rejection due to insufficient handset memory (12+ hrs)</td><td><span class="r0">0</span></td></tr>
+        <tr><td>Subscriber Busy</td><td>MSC busy handling an existing transaction with the handset</td><td><span class="r3">3</span></td></tr>
+        <tr><td>Unidentified subscriber</td><td>MT number is unknown in the MT network's MSC</td><td><span class="r0">0</span></td></tr>
+        <tr><td>Barred subscriber</td><td>Number cannot receive SMS (unpaid bills / blacklisted / user-requested)</td><td><span class="r0">0</span></td></tr>
+        <tr><td>Illegal subscriber</td><td>Sender ID blocked by operators for illegal SMS traffic</td><td><span class="r0">0</span></td></tr>
+        <tr><td>SMS Failed</td><td>Sender ID blocked for illegal SMS traffic</td><td><span class="r0">0</span></td></tr>
+        <tr><td>System failure</td><td>Rejection due to SS7 protocol or network failure</td><td><span class="r3">3</span></td></tr>
+        <tr><td>SMS Failed</td><td>Network failure in SMSC Link</td><td><span class="r3">3</span></td></tr>
+        <tr><td>SMSC Timeout-abort</td><td>SMSC timeout</td><td><span class="r3">3</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div>© 2014–2026 MiM Digital Marketing Solution Ltd. &nbsp;·&nbsp; Dhaka, Bangladesh</div>
+    <div class="footer-links">
+      <a href="https://www.mimsms.com" target="_blank">Website</a>
+      <a href="https://sms.mimsms.com" target="_blank">SMS Panel</a>
+      <a href="mailto:support@mimsms.com">support@mimsms.com</a>
+      <a href="tel:01844909030">01844-909030</a>
+    </div>
+  </footer>
+
+</div><!-- /main-content -->
+</div><!-- /body-layout -->
+
+<script>
+// Tab switch
+function sw(group, tab) {
+  const tabBar = document.getElementById('t-' + group);
+  if (!tabBar) return;
+  const right = tabBar.closest('.ep-right') || tabBar.parentElement;
+  tabBar.querySelectorAll('.lang-tab').forEach(t => {
+    t.classList.toggle('active', t.getAttribute('onclick') === `sw('${group}','${tab}')`);
+  });
+  right.querySelectorAll('.code-snippet').forEach(el => {
+    el.classList.toggle('active', el.getAttribute('data-tab') === group + '-' + tab);
+  });
+}
+
+// Copy
+function cp(btn) {
+  const panel = btn.closest('.code-panel');
+  const visible = panel.querySelector('.code-snippet.active') || panel.querySelector('pre.code-block');
+  if (!visible) return;
+  navigator.clipboard.writeText(visible.innerText.trim()).then(() => {
+    btn.textContent = 'Copied!'; btn.classList.add('done');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 2000);
+  });
+}
+
+// Scroll spy
+const scrollEl = document.getElementById('ms');
+const navLinks = document.querySelectorAll('.nav-item');
+const anchors  = document.querySelectorAll('[id]');
+scrollEl.addEventListener('scroll', () => {
+  let cur = '';
+  anchors.forEach(s => { if (s.id && scrollEl.scrollTop + 90 >= s.offsetTop) cur = s.id; });
+  navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + cur));
+}, { passive: true });
+
+// Nav click smooth scroll
+navLinks.forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const t = document.querySelector(a.getAttribute('href'));
+    if (t) scrollEl.scrollTo({ top: t.offsetTop - 10, behavior: 'smooth' });
+  });
+});
+
+// Sidebar filter
+function filterNav(q) {
+  q = q.toLowerCase();
+  navLinks.forEach(a => {
+    const lbl = (a.getAttribute('data-label') || a.querySelector('.nav-label')?.textContent || '').toLowerCase();
+    a.style.display = lbl.includes(q) ? '' : 'none';
+  });
+  document.querySelectorAll('.sidebar-section-title').forEach(t => {
+    const sec = t.parentElement;
+    const any = [...sec.querySelectorAll('.nav-item')].some(i => i.style.display !== 'none');
+    t.style.display = any ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>

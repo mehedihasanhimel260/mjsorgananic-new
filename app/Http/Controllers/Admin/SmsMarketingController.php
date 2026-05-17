@@ -18,8 +18,7 @@ class SmsMarketingController extends Controller
     public function __construct(
         private readonly SmsGatewayService $smsGatewayService,
         private readonly SmsCampaignService $smsCampaignService,
-    ) {
-    }
+    ) {}
 
     public function index()
     {

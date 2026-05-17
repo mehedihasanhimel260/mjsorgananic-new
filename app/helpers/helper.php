@@ -1,11 +1,10 @@
 <?php
 
-use App\Models\AiSetting;
-use App\Models\Affiliate;
 use App\Models\AffiliateLink;
+use App\Models\AiSetting;
 use App\Models\FbSetting;
-use App\Models\Product;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 if (! function_exists('gemini_api_response')) {
     function gemini_api_response(string $prompt, ?AiSetting $setting = null): array
@@ -151,11 +150,20 @@ if (! function_exists('fb_send_page_message')) {
         $setting = FbSetting::first();
 
         if (! $setting || ! $setting->access_token) {
+            info('Facebook message send skipped: access token missing.', [
+                'psid' => $psid,
+            ]);
+
             return [
                 'success' => false,
                 'message' => 'Facebook access token is not configured.',
             ];
         }
+
+        info('Facebook message send request started.', [
+            'psid' => $psid,
+            'message_preview' => mb_substr($message, 0, 120),
+        ]);
 
         $response = Http::timeout(30)
             ->withToken($setting->access_token)
@@ -169,6 +177,21 @@ if (! function_exists('fb_send_page_message')) {
             ]);
 
         $data = $response->json();
+
+        info('Facebook message send response received.', [
+            'psid' => $psid,
+            'success' => $response->successful(),
+            'status' => $response->status(),
+            'response' => $data,
+        ]);
+
+        if (! $response->successful()) {
+            Log::warning('Facebook Graph API returned a failed response.', [
+                'psid' => $psid,
+                'status' => $response->status(),
+                'response' => $data,
+            ]);
+        }
 
         return [
             'success' => $response->successful(),

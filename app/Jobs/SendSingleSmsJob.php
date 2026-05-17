@@ -19,8 +19,7 @@ class SendSingleSmsJob implements ShouldQueue
         public string $message,
         public ?int $userId,
         public ?int $sentByAdminId,
-    ) {
-    }
+    ) {}
 
     public function handle(SmsGatewayService $smsGatewayService): void
     {
@@ -32,8 +31,11 @@ class SendSingleSmsJob implements ShouldQueue
             'phone' => $result['phone'] ?? $this->phone,
             'message' => $this->message,
             'send_type' => 'single',
+            'gateway_transaction_id' => $result['transaction_id'] ?? null,
             'status_code' => $result['code'],
             'status_text' => $result['status_text'],
+            'delivery_status' => $result['success'] ? 'submitted' : 'failed',
+            'delivery_finalized_at' => $result['success'] ? null : now(),
             'gateway_response' => $result['raw_response'],
             'sent_at' => now(),
         ]);

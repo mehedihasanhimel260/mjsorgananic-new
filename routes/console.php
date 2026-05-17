@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('steadfast:sync-status')->everySixHours();
 Schedule::command('sms:dispatch-weekly-campaign')->everyMinute()->timezone('Asia/Dhaka');
+Schedule::command('sms:poll-delivery-status')->everyMinute()->timezone('Asia/Dhaka');

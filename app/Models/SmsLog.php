@@ -11,12 +11,19 @@ class SmsLog extends Model
 
     protected $fillable = [
         'user_id',
+        'sms_campaign_id',
         'sent_by_admin_id',
         'phone',
         'message',
         'send_type',
+        'campaign_key',
+        'gateway_transaction_id',
         'status_code',
         'status_text',
+        'delivery_status',
+        'delivery_attempts',
+        'delivery_status_checked_at',
+        'delivery_finalized_at',
         'gateway_response',
         'sent_at',
     ];
@@ -25,7 +32,14 @@ class SmsLog extends Model
     {
         return [
             'sent_at' => 'datetime',
+            'delivery_status_checked_at' => 'datetime',
+            'delivery_finalized_at' => 'datetime',
         ];
+    }
+
+    public function campaign()
+    {
+        return $this->belongsTo(SmsCampaign::class, 'sms_campaign_id');
     }
 
     public function user()
