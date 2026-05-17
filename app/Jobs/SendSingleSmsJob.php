@@ -34,7 +34,7 @@ class SendSingleSmsJob implements ShouldQueue
             'gateway_transaction_id' => $result['transaction_id'] ?? null,
             'status_code' => $result['code'],
             'status_text' => $result['status_text'],
-            'delivery_status' => $result['success'] ? 'submitted' : 'failed',
+            'delivery_status' => $result['success'] ? 'processing' : 'failed',
             'delivery_finalized_at' => $result['success'] ? null : now(),
             'gateway_response' => $result['raw_response'],
             'sent_at' => now(),

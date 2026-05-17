@@ -156,8 +156,7 @@ class SmsCampaignService
     public function pollDeliveryStatuses(): int
     {
         $logs = SmsLog::query()
-            ->where('send_type', 'weekly')
-            ->where('delivery_status', 'processing')
+            ->whereIn('delivery_status', ['processing', 'submitted'])
             ->whereNotNull('gateway_transaction_id')
             ->whereNull('delivery_finalized_at')
             ->orderBy('id')
