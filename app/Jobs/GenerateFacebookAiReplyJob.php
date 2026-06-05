@@ -23,12 +23,6 @@ class GenerateFacebookAiReplyJob implements ShouldQueue
 
     public function handle(AiReplyService $aiReplyService): void
     {
-        info('Facebook AI reply job started.', [
-            'user_id' => $this->userId,
-            'sender_psid' => $this->senderPsid,
-            'message_preview' => mb_substr($this->message, 0, 120),
-        ]);
-
         $user = User::find($this->userId);
 
         if (! $user) {
@@ -42,19 +36,7 @@ class GenerateFacebookAiReplyJob implements ShouldQueue
 
         try {
             $replyMessage = $aiReplyService->generateReply($user, $this->message);
-            info('Facebook AI reply generated.', [
-                'user_id' => $this->userId,
-                'sender_psid' => $this->senderPsid,
-                'reply_preview' => mb_substr($replyMessage, 0, 120),
-            ]);
-
-            $sendResult = fb_send_page_message($this->senderPsid, $replyMessage);
-
-            info('Facebook AI reply send attempt completed.', [
-                'user_id' => $this->userId,
-                'sender_psid' => $this->senderPsid,
-                'send_result' => $sendResult,
-            ]);
+            fb_send_page_message($this->senderPsid, $replyMessage);
         } catch (\Throwable $exception) {
             Log::error('Queued Facebook AI reply failed.', [
                 'user_id' => $this->userId,

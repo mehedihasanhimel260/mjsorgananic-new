@@ -144,26 +144,57 @@ if (! function_exists('active_ai_response')) {
     }
 }
 
+if (! function_exists('prepare_facebook_message_text')) {
+    function prepare_facebook_message_text(string $message, int $maxLength = 1800): string
+    {
+        $message = str_replace(["\r\n", "\r"], "\n", $message);
+
+        $message = preg_replace('/^#{1,6}\s*/m', '', $message) ?? $message;
+        $message = preg_replace('/\*\*(.*?)\*\*/s', '$1', $message) ?? $message;
+        $message = preg_replace('/__(.*?)__/s', '$1', $message) ?? $message;
+        $message = preg_replace('/(?<!\*)\*(?!\*)(.*?)\*(?<!\*)/s', '$1', $message) ?? $message;
+        $message = preg_replace('/(?<!_)_(?!_)(.*?)_(?<!_)/s', '$1', $message) ?? $message;
+        $message = preg_replace('/^\s*[-*•]\s+/m', '- ', $message) ?? $message;
+        $message = preg_replace('/\n{3,}/', "\n\n", $message) ?? $message;
+
+        $message = trim($message);
+
+        if ($message === '') {
+            return 'দুঃখিত, এই মুহূর্তে উত্তর প্রস্তুত করা যায়নি। একটু পরে আবার চেষ্টা করুন।';
+        }
+
+        if (mb_strlen($message) <= $maxLength) {
+            return $message;
+        }
+
+        $truncated = mb_substr($message, 0, $maxLength);
+        $lastBreak = max(
+            (int) mb_strrpos($truncated, "\n"),
+            (int) mb_strrpos($truncated, '. '),
+            (int) mb_strrpos($truncated, '।'),
+            (int) mb_strrpos($truncated, ' ')
+        );
+
+        if ($lastBreak > (int) ($maxLength * 0.6)) {
+            $truncated = mb_substr($truncated, 0, $lastBreak);
+        }
+
+        return rtrim($truncated, " \n\r\t.-") . '...';
+    }
+}
+
 if (! function_exists('fb_send_page_message')) {
     function fb_send_page_message(string $psid, string $message): array
     {
         $setting = FbSetting::first();
+        $message = prepare_facebook_message_text($message);
 
         if (! $setting || ! $setting->access_token) {
-            info('Facebook message send skipped: access token missing.', [
-                'psid' => $psid,
-            ]);
-
             return [
                 'success' => false,
                 'message' => 'Facebook access token is not configured.',
             ];
         }
-
-        info('Facebook message send request started.', [
-            'psid' => $psid,
-            'message_preview' => mb_substr($message, 0, 120),
-        ]);
 
         $response = Http::timeout(30)
             ->withToken($setting->access_token)
@@ -177,13 +208,6 @@ if (! function_exists('fb_send_page_message')) {
             ]);
 
         $data = $response->json();
-
-        info('Facebook message send response received.', [
-            'psid' => $psid,
-            'success' => $response->successful(),
-            'status' => $response->status(),
-            'response' => $data,
-        ]);
 
         if (! $response->successful()) {
             Log::warning('Facebook Graph API returned a failed response.', [

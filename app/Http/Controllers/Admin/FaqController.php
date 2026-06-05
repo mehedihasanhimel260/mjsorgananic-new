@@ -22,7 +22,14 @@ class FaqController extends Controller
 
     public function index()
     {
-        $faqs = Faq::latest()->get();
+        $faqs = Faq::query()
+            ->orderByRaw("CASE WHEN status = ? THEN 0 WHEN status = ? THEN 1 ELSE 2 END", [
+                Faq::STATUS_PENDING,
+                Faq::STATUS_ACTIVE,
+            ])
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
         return view('admin.faqs.index', compact('faqs'));
     }

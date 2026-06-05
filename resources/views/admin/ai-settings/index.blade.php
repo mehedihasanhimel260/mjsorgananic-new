@@ -52,6 +52,33 @@
     <div class="card mt-6">
         <header class="card-header">
             <p class="card-header-title">
+                <span class="icon"><i class="mdi mdi-message-text-outline"></i></span>
+                Facebook Reply Prompt
+            </p>
+        </header>
+        <div class="card-content">
+            <form method="POST" action="{{ route('admin.ai-settings.facebook-prompt.update') }}">
+                @csrf
+                <div class="field">
+                    <label class="label">Prompt</label>
+                    <div class="control">
+                        <textarea class="textarea" name="prompt" rows="16" placeholder="Facebook reply prompt likhun">{{ old('prompt', $facebookPromptSetting?->prompt) }}</textarea>
+                    </div>
+                    <p class="help">Ei prompt Facebook Messenger AI reply generate korar somoy use hobe.</p>
+                </div>
+
+                <div class="field grouped">
+                    <div class="control">
+                        <button type="submit" class="button green">Update Facebook Prompt</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mt-6">
+        <header class="card-header">
+            <p class="card-header-title">
                 <span class="icon"><i class="mdi mdi-cron"></i></span>
                 cPanel Cron Guide
             </p>

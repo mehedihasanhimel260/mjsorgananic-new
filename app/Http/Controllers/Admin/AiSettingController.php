@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AiPromptSetting;
 use App\Models\AiSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -34,8 +35,9 @@ class AiSettingController extends Controller
         $this->ensureDefaultRows();
 
         $settings = AiSetting::orderBy('title')->get();
+        $facebookPromptSetting = AiPromptSetting::ensureFacebookPrompt();
 
-        return view('admin.ai-settings.index', compact('settings'));
+        return view('admin.ai-settings.index', compact('settings', 'facebookPromptSetting'));
     }
 
     public function edit(AiSetting $aiSetting)
@@ -67,5 +69,20 @@ class AiSettingController extends Controller
         });
 
         return redirect()->route('admin.ai-settings.index')->with('success', 'AI setting updated successfully.');
+    }
+
+    public function updateFacebookPrompt(Request $request)
+    {
+        $validated = $request->validate([
+            'prompt' => 'required|string',
+        ]);
+
+        $setting = AiPromptSetting::ensureFacebookPrompt();
+
+        $setting->update([
+            'prompt' => trim($validated['prompt']),
+        ]);
+
+        return redirect()->route('admin.ai-settings.index')->with('success', 'Facebook reply prompt updated successfully.');
     }
 }

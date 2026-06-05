@@ -119,5 +119,9 @@
             </div>
         </div>
     </div>
+
+    <div class="mt-4">
+        {{ $faqs->links() }}
+    </div>
 </section>
 @endsection

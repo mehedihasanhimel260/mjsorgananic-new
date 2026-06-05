@@ -28,33 +28,16 @@ class FbWebhookController extends Controller
     {
         $payload = $request->all();
 
-        info('Facebook webhook payload received.', [
-            'entry_count' => count($payload['entry'] ?? []),
-            'payload' => $payload,
-        ]);
-
         foreach (($payload['entry'] ?? []) as $entry) {
             foreach (($entry['messaging'] ?? []) as $event) {
                 $senderPsid = $event['sender']['id'] ?? null;
                 $messageText = trim((string) ($event['message']['text'] ?? ''));
 
                 if (! $senderPsid || $messageText === '' || isset($event['message']['is_echo'])) {
-                    info('Facebook webhook event skipped.', [
-                        'sender_psid' => $senderPsid,
-                        'has_message_text' => $messageText !== '',
-                        'is_echo' => isset($event['message']['is_echo']),
-                        'event' => $event,
-                    ]);
-
                     continue;
                 }
 
                 try {
-                    info('Facebook webhook message accepted for processing.', [
-                        'sender_psid' => $senderPsid,
-                        'message_preview' => mb_substr($messageText, 0, 120),
-                    ]);
-
                     $user = User::firstOrCreate(
                         ['PSID_OF_USER' => $senderPsid],
                         [
@@ -65,11 +48,6 @@ class FbWebhookController extends Controller
                     );
 
                     GenerateFacebookAiReplyJob::dispatch($user->id, $senderPsid, $messageText);
-
-                    info('Facebook reply job dispatched.', [
-                        'user_id' => $user->id,
-                        'sender_psid' => $senderPsid,
-                    ]);
                 } catch (\Throwable $exception) {
                     Log::error('Facebook webhook message handling failed.', [
                         'message' => $exception->getMessage(),

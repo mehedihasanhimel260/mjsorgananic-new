@@ -111,6 +111,7 @@ Route::prefix('admin')
                 Route::get('ai-settings', [AiSettingController::class, 'index'])->name('ai-settings.index');
                 Route::get('ai-settings/{aiSetting}/edit', [AiSettingController::class, 'edit'])->name('ai-settings.edit');
                 Route::patch('ai-settings/{aiSetting}', [AiSettingController::class, 'update'])->name('ai-settings.update');
+                Route::post('ai-settings/facebook-prompt', [AiSettingController::class, 'updateFacebookPrompt'])->name('ai-settings.facebook-prompt.update');
                 Route::get('fb-settings', [FbSettingController::class, 'index'])->name('fb-settings.index');
                 Route::post('fb-settings', [FbSettingController::class, 'update'])->name('fb-settings.update');
                 Route::get('seo-settings', [SeoSettingController::class, 'index'])->name('seo-settings.index');
