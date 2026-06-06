@@ -14,6 +14,7 @@ class Conversion extends Model
         'user_id',
         'admin_id',
         'sender_type',
+        'external_message_id',
         'convertion_message',
     ];
 

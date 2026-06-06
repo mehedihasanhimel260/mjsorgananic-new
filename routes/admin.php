@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\ChatController as AdminChatController;
 use App\Http\Controllers\Admin\DeliveryChargeController;
 use App\Http\Controllers\Admin\FaqController;
 use App\Http\Controllers\Admin\FbSettingController;
+use App\Http\Controllers\Admin\LandingPageController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ProductCommissionController;
@@ -48,6 +49,7 @@ Route::prefix('admin')
             Route::middleware('admin.permission:products.manage')->group(function () {
                 Route::resource('categories', CategoryController::class);
                 Route::resource('products', ProductController::class);
+                Route::resource('landing-pages', LandingPageController::class)->except(['show']);
                 Route::resource('product-stocks', ProductStockBatchController::class);
                 Route::get('product-commissions', [ProductCommissionController::class, 'index'])->name('product-commissions.index');
                 Route::get('product-commissions/create', [ProductCommissionController::class, 'create'])->name('product-commissions.create');

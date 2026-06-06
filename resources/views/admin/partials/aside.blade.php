@@ -32,6 +32,7 @@
                 </a>
                 <ul>
                     <li><a href="{{ route('admin.products.index') }}"><span>Products</span></a></li>
+                    <li><a href="{{ route('admin.landing-pages.index') }}"><span>Landing Pages</span></a></li>
                     <li><a href="{{ route('admin.categories.index') }}"><span>Categories</span></a></li>
                     <li><a href="{{ route('admin.product-stocks.index') }}"><span>Products Stock</span></a></li>
                     <li><a href="{{ route('admin.product-commissions.index') }}"><span>Product Commissions</span></a></li>

@@ -1,6 +1,7 @@
 function chatWidget(config) {
   return {
     open: false,
+    menuOpen: false,
     sending: false,
     registered: false,
     messages: [],
@@ -21,6 +22,7 @@ function chatWidget(config) {
 
     toggleChat() {
       this.open = !this.open;
+      this.menuOpen = false;
 
       if (this.open) {
         this.loadHistory();
@@ -32,8 +34,17 @@ function chatWidget(config) {
       this.stopPolling();
     },
 
+    openLiveChat() {
+      this.menuOpen = false;
+      this.open = true;
+      this.loadHistory();
+      this.startPolling();
+      this.$nextTick(() => this.scrollToBottom());
+    },
+
     closeChat() {
       this.open = false;
+      this.menuOpen = false;
       this.stopPolling();
     },
 

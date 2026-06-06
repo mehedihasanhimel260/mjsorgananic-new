@@ -9,7 +9,7 @@ use App\Models\User;
 
 class AiReplyService
 {
-    public function generateReply(User $user, string $message): string
+    public function generateReply(User $user, string $message, array $conversationHistory = []): string
     {
         $directFaqAnswer = $this->findFaqAnswer($message);
 
@@ -17,7 +17,7 @@ class AiReplyService
             return $directFaqAnswer;
         }
 
-        $aiPrompt = $this->buildAiPrompt($user, $message);
+        $aiPrompt = $this->buildAiPrompt($user, $message, $conversationHistory);
         $aiResponse = active_ai_response($aiPrompt);
         $reply = $aiResponse['success']
             ? $aiResponse['message']
@@ -153,11 +153,32 @@ class AiReplyService
         })->implode("\n");
     }
 
-    private function buildAiPrompt(User $user, string $message): string
+    private function buildConversationContext(array $conversationHistory): string
+    {
+        if ($conversationHistory === []) {
+            return 'No previous conversation found.';
+        }
+
+        return collect($conversationHistory)
+            ->take(-15)
+            ->map(function (array $conversion, int $index) {
+                $sender = match ($conversion['sender_type'] ?? 'user') {
+                    'admin' => 'Admin',
+                    'ai' => 'Assistant',
+                    default => 'Customer',
+                };
+
+                return ($index + 1).'. '.$sender.': '.trim((string) ($conversion['message'] ?? ''));
+            })
+            ->implode("\n");
+    }
+
+    private function buildAiPrompt(User $user, string $message, array $conversationHistory = []): string
     {
         $faqContext = $this->buildFaqContext();
         $productContext = $this->buildProductContext();
         $basePrompt = AiPromptSetting::facebookPrompt();
+        $conversationContext = $this->buildConversationContext($conversationHistory);
 
         return <<<PROMPT
 {$basePrompt}
@@ -165,6 +186,9 @@ class AiReplyService
 Customer Name: {$user->name}
 Customer Phone: {$user->phone}
 Customer Message: {$message}
+
+Previous Conversation:
+{$conversationContext}
 
 FAQ Data:
 {$faqContext}

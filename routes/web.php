@@ -5,6 +5,7 @@ use App\Http\Controllers\FbWebhookController;
 use App\Http\Controllers\Front_site\AffiliateTrackingController;
 use App\Http\Controllers\Front_site\ChatController as FrontChatController;
 use App\Http\Controllers\Front_site\FrontSiteController;
+use App\Http\Controllers\Front_site\LandingPageController;
 use App\Http\Controllers\Front_site\OrderController;
 use App\Http\Controllers\Front_site\SitePageController;
 use App\Http\Controllers\ProfileController;
@@ -53,7 +54,10 @@ Route::get('/make-admin', function () {
 require __DIR__ . '/admin.php';
 require __DIR__ . '/Affiliate.php';
 
-Route::get('/', [FrontSiteController::class, 'index'])->name('home');
+Route::get('/', [LandingPageController::class, 'home'])->name('home');
+Route::get('/products', [FrontSiteController::class, 'index'])->name('products.index');
+Route::get('/landing/{slug}', [LandingPageController::class, 'show'])->name('landing.show');
+Route::post('/landing/{landingPage}/order', [LandingPageController::class, 'order'])->name('landing.order');
 Route::get('/products/{product}', [FrontSiteController::class, 'show'])->name('products.show');
 Route::get('/pages/{slug}', [SitePageController::class, 'show'])->name('pages.show');
 Route::get('/ref/{tracking_code}', [AffiliateTrackingController::class, 'handle'])->name('affiliate.track');

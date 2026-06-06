@@ -28,6 +28,10 @@
                     <span class="icon"><i class="mdi mdi-arrow-left"></i></span>
                     <span>Back</span>
                 </a>
+                <button type="button" class="button green ml-2" onclick="window.print()">
+                    <span class="icon"><i class="mdi mdi-printer"></i></span>
+                    <span>Print Invoice</span>
+                </button>
             </header>
             <div class="card-content">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -358,5 +362,228 @@
             </table>
         </div>
     </div>
+
+    <div id="print-invoice" class="hidden">
+        <div class="invoice-wrap">
+            <div class="invoice-header">
+                <div>
+                    <h1>MJS Organic</h1>
+                    <p>Order Invoice</p>
+                </div>
+                <div class="invoice-meta">
+                    <p><strong>Invoice:</strong> {{ $order->order_number }}</p>
+                    <p><strong>Date:</strong> {{ $order->created_at->format('Y-m-d H:i') }}</p>
+                    <p><strong>Status:</strong> {{ ucfirst(str_replace('_', ' ', $orderStatus)) }}</p>
+                </div>
+            </div>
+
+            <div class="invoice-grid">
+                <div>
+                    <h3>Bill To</h3>
+                    <p><strong>Name:</strong> {{ $order->user?->name ?? 'N/A' }}</p>
+                    <p><strong>Phone:</strong> {{ $order->user?->phone ?? 'N/A' }}</p>
+                    <p><strong>Address:</strong> {{ $order->user?->saved_address ?? 'N/A' }}</p>
+                </div>
+                <div>
+                    <h3>Order Info</h3>
+                    <p><strong>Order Type:</strong> {{ ucfirst($order->order_type) }}</p>
+                    <p><strong>Track ID:</strong> {{ $order->track_id ?? 'N/A' }}</p>
+                    <p><strong>Payment:</strong> Cash on Delivery</p>
+                </div>
+            </div>
+
+            <table class="invoice-table invoice-item-table">
+                <thead>
+                    <tr>
+                        <th>Product Name</th>
+                        <th>Quantity</th>
+                        <th>Rate</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($order->items as $item)
+                        <tr>
+                            <td>{{ $item->product?->name ?? 'N/A' }}</td>
+                            <td>{{ $item->quantity }}</td>
+                            <td>{{ number_format((float) $item->sell_price, 2) }}</td>
+                            <td>{{ number_format((float) ($item->quantity * $item->sell_price), 2) }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+
+            <div class="invoice-total">
+                <p><span>Product Total</span><strong>{{ number_format((float) $productTotal, 2) }}</strong></p>
+                <p><span>Delivery Charge</span><strong>{{ number_format((float) ($order->delivery_charge ?? 0), 2) }}</strong></p>
+                <p><span>Discount</span><strong>{{ number_format((float) ($order->discount_amount ?? 0), 2) }}</strong></p>
+                <p class="grand"><span>Grand Total</span><strong>{{ number_format((float) $grandTotal, 2) }}</strong></p>
+            </div>
+
+            <div class="invoice-footer">
+                <p>Thank you for shopping with MJS Organic.</p>
+                <p>Printed at: {{ now()->format('Y-m-d H:i') }}</p>
+            </div>
+        </div>
+    </div>
 </section>
 @endsection
+
+@push('scripts')
+<style>
+    @media print {
+        body * {
+            visibility: hidden !important;
+        }
+
+        #print-invoice,
+        #print-invoice * {
+            visibility: visible !important;
+        }
+
+        #print-invoice {
+            display: block !important;
+            position: absolute;
+            inset: 0;
+            background: #fff;
+            color: #111;
+            padding: 24px;
+        }
+
+        .invoice-wrap {
+            width: 100%;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+        }
+
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 2px solid #111;
+            padding-bottom: 14px;
+            margin-bottom: 18px;
+        }
+
+        .invoice-header h1 {
+            font-size: 26px;
+            font-weight: 800;
+            margin: 0;
+        }
+
+        .invoice-header p,
+        .invoice-grid p,
+        .invoice-footer p {
+            margin: 4px 0;
+        }
+
+        .invoice-meta {
+            text-align: right;
+        }
+
+        .invoice-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 20px;
+        }
+
+        .invoice-grid h3 {
+            font-size: 15px;
+            margin: 0 0 8px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            table-layout: fixed;
+        }
+
+        .invoice-table th,
+        .invoice-table td {
+            border: 1px solid #bbb;
+            padding: 8px;
+            text-align: left;
+            display: table-cell !important;
+        }
+
+        .invoice-table thead {
+            display: table-header-group !important;
+        }
+
+        .invoice-table tbody {
+            display: table-row-group !important;
+        }
+
+        .invoice-table tr {
+            display: table-row !important;
+        }
+
+        .invoice-table th {
+            background: #f1f1f1 !important;
+            font-weight: 700;
+        }
+
+        .invoice-item-table th {
+            background: #111827 !important;
+            color: #fff !important;
+            padding: 10px 14px;
+        }
+
+        .invoice-item-table th:nth-child(1),
+        .invoice-item-table td:nth-child(1) {
+            width: 55%;
+            text-align: left;
+        }
+
+        .invoice-item-table th:nth-child(2),
+        .invoice-item-table td:nth-child(2) {
+            width: 15%;
+            text-align: center;
+        }
+
+        .invoice-item-table th:nth-child(3),
+        .invoice-item-table td:nth-child(3),
+        .invoice-item-table th:nth-child(4),
+        .invoice-item-table td:nth-child(4) {
+            width: 15%;
+            text-align: right;
+        }
+
+        .invoice-item-table td::before {
+            content: none !important;
+            display: none !important;
+        }
+
+        .invoice-total {
+            width: 320px;
+            margin-left: auto;
+            margin-top: 18px;
+        }
+
+        .invoice-total p {
+            display: flex;
+            justify-content: space-between;
+            margin: 0;
+            padding: 7px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .invoice-total .grand {
+            font-size: 16px;
+            font-weight: 800;
+            border-bottom: 2px solid #111;
+        }
+
+        .invoice-footer {
+            margin-top: 36px;
+            border-top: 1px solid #ddd;
+            padding-top: 12px;
+            text-align: center;
+            color: #555;
+        }
+    }
+</style>
+@endpush

@@ -103,7 +103,7 @@
           if ($menu->menu_type === 'internal_page' && $menu->target_slug) {
               $menuUrl = route('pages.show', $menu->target_slug);
           } elseif ($menu->menu_type === 'product_section') {
-              $menuUrl = route('home').'#product-list';
+              $menuUrl = route('products.index').'#product-list';
           } elseif (!empty($menu->url)) {
               $menuUrl = $menu->url;
           }
@@ -158,9 +158,30 @@
     </div>
     <div id="footer-contact">
       <h4 class="text-sm font-semibold uppercase tracking-wide text-gray-900">Contact</h4>
+      @php
+        $footerWhatsappDigits = preg_replace('/\D+/', '', (string) ($siteSetting?->whatsapp_number ?? ''));
+        if (str_starts_with($footerWhatsappDigits, '0')) {
+            $footerWhatsappDigits = '88'.$footerWhatsappDigits;
+        }
+        $footerWhatsappUrl = $footerWhatsappDigits ? 'https://wa.me/'.$footerWhatsappDigits : null;
+        $footerFacebookUrl = $siteSetting?->facebook_url ?: 'https://m.me/mjsorganic';
+      @endphp
       <div class="mt-4 space-y-2 text-sm text-gray-600">
         @if(!empty($siteSetting?->contact_phone))<p>Phone: {{ $siteSetting->contact_phone }}</p>@endif
-        @if(!empty($siteSetting?->whatsapp_number))<p>WhatsApp: {{ $siteSetting->whatsapp_number }}</p>@endif
+        @if(!empty($siteSetting?->whatsapp_number))
+          <p>
+            WhatsApp:
+            <a href="{{ $footerWhatsappUrl }}" target="_blank" rel="noopener noreferrer" class="hover:text-green-700">
+              {{ $siteSetting->whatsapp_number }}
+            </a>
+          </p>
+        @endif
+        <p>
+          Facebook:
+          <a href="{{ $footerFacebookUrl }}" target="_blank" rel="noopener noreferrer" class="hover:text-green-700">
+            Messenger
+          </a>
+        </p>
         @if(!empty($siteSetting?->support_email))<p>Email: {{ $siteSetting->support_email }}</p>@endif
         @if(!empty($siteSetting?->default_address))<p>{{ $siteSetting->default_address }}</p>@endif
       </div>

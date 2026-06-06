@@ -63,7 +63,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function showVisitorModal() { modal.classList.remove('hidden'); }
-    function hideVisitorModal() { modal.classList.add('hidden'); }
+    function hideVisitorModal() {
+        pendingProductId = null;
+        modal.classList.add('hidden');
+    }
 
     function updateVisitorStatus(message, isError = false) {
         visitorStatusEl.textContent = message;
@@ -387,11 +390,13 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     modalCloseBtn.addEventListener('click', function () {
-        if (!sessionCustomer.name || !sessionCustomer.phone) {
-            updateVisitorStatus('চালিয়ে যেতে আগে ভিজিটর তথ্য সংরক্ষণ করুন।', true);
-            return;
-        }
         hideVisitorModal();
+    });
+
+    modal.addEventListener('click', function (e) {
+        if (e.target === modal) {
+            hideVisitorModal();
+        }
     });
 
     visitorInfoForm.addEventListener('submit', async function (e) {
